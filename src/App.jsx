@@ -306,7 +306,7 @@ export default function App() {
             <div style={S.logoMark}>⚽</div>
             <div>
               <div style={S.logoTitle}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
-              <div style={S.logoSub}>Pronosticuri cu prietenii</div>
+              <div style={S.logoSub}>Pariorii de AERO PART EXPERT</div>
             </div>
           </div>
           {currentUser && (
@@ -740,7 +740,7 @@ export default function App() {
       </main>
 
       <footer style={S.footer}>
-        <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>EidrieN</b>
+        <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>Adrian Barbos</b>
       </footer>
     </div>
   )
