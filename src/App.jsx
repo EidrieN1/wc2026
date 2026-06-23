@@ -254,7 +254,7 @@ export default function App() {
             <span style={{ fontSize: 26 }}>⚽</span>
             <div>
               <div style={S.logoTitle}>CUPA MONDIALĂ 2026</div>
-              <div style={S.logoSub}>Pronosticuri cu prietenii</div>
+              <div style={S.logoSub}>Pariorii de la APE</div>
             </div>
           </div>
           {currentUser && (
