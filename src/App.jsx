@@ -67,6 +67,36 @@ export default function App() {
     return () => clearInterval(t)
   }, [])
 
+  // ── Fonturi (Oswald pt. display/scor, Inter pt. text) + animații/focus ──
+  useEffect(() => {
+    if (document.getElementById('wc2026-fonts')) return
+    const link = document.createElement('link')
+    link.id = 'wc2026-fonts'
+    link.rel = 'stylesheet'
+    link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap'
+    document.head.appendChild(link)
+
+    const style = document.createElement('style')
+    style.id = 'wc2026-anim'
+    style.textContent = `
+      @keyframes wcPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+      @keyframes wcRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      @media (prefers-reduced-motion: reduce) {
+        .wc-pulse-dot { animation: none !important; }
+        .wc-rise { animation: none !important; }
+      }
+      input[type=number]::-webkit-inner-spin-button,
+      input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      input[type=number] { -moz-appearance: textfield; }
+      .wc-app *:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+      .wc-app ::selection { background: rgba(212,175,55,0.35); }
+      .wc-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+      .wc-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+      .wc-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.35); border-radius: 8px; }
+    `
+    document.head.appendChild(style)
+  }, [])
+
   // ── Firebase listeners ──
   useEffect(() => {
     const unsubUsers = onValue(ref(db, 'users'), snap => {
@@ -154,7 +184,7 @@ export default function App() {
     setInputPass('')
     setInputPass2('')
     setLoginError('')
-    showToast(`Salut BOSS!, ${name}! 🎉`)
+    showToast(`Bun venit, ${name}! 🎉`)
   }
 
   const handleLogout = () => {
@@ -246,27 +276,28 @@ export default function App() {
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
   return (
-    <div style={S.root}>
+    <div className="wc-app" style={S.root}>
       {/* ── HEADER ── */}
       <header style={S.header}>
+        <div style={S.headerTopLine} />
         <div style={S.headerInner}>
           <div style={S.logo}>
-            <span style={{ fontSize: 26 }}>⚽</span>
+            <div style={S.logoMark}>⚽</div>
             <div>
-              <div style={S.logoTitle}>CUPA MONDIALĂ 2026</div>
-              <div style={S.logoSub}>Pariorii de la AERO PART EXPERT</div>
+              <div style={S.logoTitle}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
+              <div style={S.logoSub}>Pronosticuri cu prietenii</div>
             </div>
           </div>
           {currentUser && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={S.userBadge}>👤 {currentUser.name}</span>
+              <span style={S.userBadge}>{currentUser.name}</span>
               <button style={S.btnGhost} onClick={handleLogout}>Ieșire</button>
             </div>
           )}
         </div>
         {currentUser && (
-          <nav style={{ display: 'flex', gap: 4, padding: '0 16px 10px' }}>
-            {[['predict','🎯 Pronosticuri'],['leaderboard','🏆 Clasament'],['admin','⚙️ Admin']].map(([k,l]) => (
+          <nav style={S.navWrap}>
+            {[['predict','Pronosticuri'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
               <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }} onClick={() => setView(k)}>{l}</button>
             ))}
           </nav>
@@ -275,9 +306,10 @@ export default function App() {
 
       {/* ── TOAST ── */}
       {toast && (
-        <div style={{ ...S.toast, background: toast.type === 'err' ? '#c0392b' : '#27ae60' }}>
+        <div className="wc-rise" style={{ ...S.toast, animation: 'wcRise 0.25s ease', background: toast.type === 'err' ? 'linear-gradient(135deg,#c0392b,#922b21)' : 'linear-gradient(135deg,#1a7a4c,#0e5c38)' }}>
           {toast.msg}
         </div>
+
       )}
 
       <main style={S.main}>
@@ -286,8 +318,9 @@ export default function App() {
         {view === 'login' && (
           <div style={S.center}>
             <div style={S.card}>
-              <div style={{ fontSize: 44, marginBottom: 10 }}>🌍</div>
+              <div style={S.cardCrest}>⚽</div>
               <h2 style={S.cardTitle}>Intră în joc</h2>
+              <div style={S.cardDivider} />
 
               {loginStep === 'name' && (
                 <>
@@ -303,7 +336,7 @@ export default function App() {
 
               {loginStep === 'password' && (
                 <>
-                  <p style={S.cardSub}>Salut, <b style={{ color: '#f1c40f' }}>{inputName}</b>! Introdu parola ta.</p>
+                  <p style={S.cardSub}>Salut, <b style={S.cardSubAccent}>{inputName}</b>! Introdu parola ta.</p>
                   <input style={S.input} type="password" placeholder="Parola ta"
                     value={inputPass}
                     onChange={e => setInputPass(e.target.value)}
@@ -320,7 +353,7 @@ export default function App() {
               {loginStep === 'register' && (
                 <>
                   <p style={S.cardSub}>
-                    Cont nou pentru <b style={{ color: '#f1c40f' }}>{inputName}</b>.<br/>
+                    Cont nou pentru <b style={S.cardSubAccent}>{inputName}</b>.<br/>
                     Alege o parolă cu care te vei loga data viitoare.
                   </p>
                   <input style={S.input} type="password" placeholder="Alege o parolă (min. 4 caractere)"
@@ -345,21 +378,25 @@ export default function App() {
         {/* ════ PRONOSTICURI ════ */}
         {view === 'predict' && currentUser && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={S.pageTitle}>Pronosticurile tale</h2>
-              <button style={{ ...S.btnPrimary, width: 'auto', padding: '10px 20px', fontSize: 14 }}
+              <button style={{ ...S.btnPrimary, width: 'auto', padding: '10px 20px', fontSize: 13 }}
                 onClick={savePredictions} disabled={saving}>
-                {saving ? 'Se salvează...' : '💾 Salvează'}
+                {saving ? 'Se salvează...' : 'Salvează'}
               </button>
             </div>
             <div style={S.infoBox}>
-              🥇 Scor exact = <b>5 pct</b> &nbsp;|&nbsp; 🎯 Diferență goluri = <b>3 pct</b> &nbsp;|&nbsp; ✔️ Câștigător = <b>2 pct</b>
-              <br/>🔒 Pronosticurile se blochează automat cu <b>5 minute</b> înainte de fiecare meci
+              <span style={S.infoPt}><b style={S.infoPtGold}>5p</b> scor exact</span>
+              <span style={S.infoDot}>·</span>
+              <span style={S.infoPt}><b style={S.infoPtBlue}>3p</b> diferență goluri</span>
+              <span style={S.infoDot}>·</span>
+              <span style={S.infoPt}><b style={S.infoPtGreen}>2p</b> câștigător corect</span>
+              <div style={{ marginTop: 6, opacity: 0.8 }}>Pronosticurile se blochează automat cu 5 minute înainte de fiecare meci.</div>
             </div>
 
             {Object.entries(matchesByDay).map(([day, dayMatches]) => (
-              <div key={day} style={{ marginBottom: 24 }}>
-                <div style={S.dayLabel}>📅 {day}</div>
+              <div key={day} style={{ marginBottom: 26 }}>
+                <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
                 {dayMatches.map(m => {
                   const pred    = localPreds[m.id] || { home: '', away: '' }
                   const res     = results[m.id]
@@ -370,56 +407,60 @@ export default function App() {
                   const minsLeft = m.kickoff ? Math.max(0, Math.ceil((new Date(m.kickoff) - now) / 60000)) : null
 
                   let cardStyle = { ...S.matchCard }
-                  if (pts === 5) cardStyle = { ...cardStyle, ...S.cardGold }
-                  else if (pts === 3) cardStyle = { ...cardStyle, ...S.cardBlue }
-                  else if (pts === 2) cardStyle = { ...cardStyle, ...S.cardGreen }
-                  else if (locked && !hasRes) cardStyle = { ...cardStyle, ...S.cardLocked }
+                  let stripeStyle = S.cardStripeDefault
+                  if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
+                  else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
+                  else if (pts === 2) { cardStyle = { ...cardStyle, ...S.cardGreen }; stripeStyle = S.cardStripeGreen }
+                  else if (locked && !hasRes) { cardStyle = { ...cardStyle, ...S.cardLocked }; stripeStyle = S.cardStripeLocked }
 
                   return (
                     <div key={m.id} style={cardStyle}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: '#95a5a6' }}>
-                          🕐 {fmtHour(m.kickoff)} &nbsp;·&nbsp; <span style={{ color: '#7f8c8d' }}>{m.group}</span>
-                        </span>
-                        {locked
-                          ? <span style={S.lockBadge}>🔒 Blocat</span>
-                          : minsLeft !== null && minsLeft <= 120
-                            ? <span style={S.timerBadge}>⏱ {minsLeft} min</span>
-                            : null
-                        }
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={S.teamName}>{m.home}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                      <div style={stripeStyle} />
+                      <div style={S.matchCardBody}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                          <span style={S.matchMeta}>
+                            {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span>
+                          </span>
                           {locked
-                            ? <>
-                                <div style={S.scoreDisplay}>{pred.home !== '' ? pred.home : '–'}</div>
-                                <span style={S.colon}>:</span>
-                                <div style={S.scoreDisplay}>{pred.away !== '' ? pred.away : '–'}</div>
-                              </>
-                            : <>
-                                <input style={S.scoreInput} type="number" min="0" max="20"
-                                  value={pred.home} placeholder="–"
-                                  onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
-                                <span style={S.colon}>:</span>
-                                <input style={S.scoreInput} type="number" min="0" max="20"
-                                  value={pred.away} placeholder="–"
-                                  onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
-                              </>
+                            ? <span style={S.lockBadge}>Blocat</span>
+                            : minsLeft !== null && minsLeft <= 120
+                              ? <span className="wc-pulse-dot" style={S.timerBadge}><span style={{...S.liveDot, animation: 'wcPulse 1.6s ease-in-out infinite'}} />{minsLeft} min</span>
+                              : null
                           }
                         </div>
-                        <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
-                      </div>
-                      {hasRes && (
-                        <div style={{ marginTop: 8, fontSize: 12, color: '#95a5a6', display: 'flex', alignItems: 'center', gap: 8 }}>
-                          Rezultat: <b style={{ color: '#ecf0f1' }}>{res.home} – {res.away}</b>
-                          {pts !== null && (
-                            <span style={{ ...S.ptsBadge, background: pts===5?'#f39c12':pts===3?'#2980b9':pts===2?'#27ae60':'#636e72' }}>
-                              {pts} pct
-                            </span>
-                          )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={S.teamName}>{m.home}</span>
+                          <div style={S.scoreboardWrap}>
+                            {locked
+                              ? <>
+                                  <div style={S.scoreDisplay}>{pred.home !== '' ? pred.home : '–'}</div>
+                                  <span style={S.colon}>:</span>
+                                  <div style={S.scoreDisplay}>{pred.away !== '' ? pred.away : '–'}</div>
+                                </>
+                              : <>
+                                  <input style={S.scoreInput} type="number" min="0" max="20"
+                                    value={pred.home} placeholder="–"
+                                    onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
+                                  <span style={S.colon}>:</span>
+                                  <input style={S.scoreInput} type="number" min="0" max="20"
+                                    value={pred.away} placeholder="–"
+                                    onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
+                                </>
+                            }
+                          </div>
+                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
                         </div>
-                      )}
+                        {hasRes && (
+                          <div style={S.resultRow}>
+                            Rezultat final <b style={S.resultScore}>{res.home} – {res.away}</b>
+                            {pts !== null && (
+                              <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
+                                +{pts}p
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )
                 })}
@@ -428,7 +469,7 @@ export default function App() {
 
             <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
               <button style={S.btnPrimary} onClick={savePredictions} disabled={saving}>
-                {saving ? 'Se salvează...' : '💾 Salvează toate pronosticurile'}
+                {saving ? 'Se salvează...' : 'Salvează toate pronosticurile'}
               </button>
             </div>
           </div>
@@ -437,24 +478,26 @@ export default function App() {
         {/* ════ CLASAMENT ════ */}
         {view === 'leaderboard' && (
           <div>
-            <h2 style={S.pageTitle}>🏆 Clasament</h2>
+            <h2 style={S.pageTitle}>Clasament</h2>
 
             {leaderboard.length === 0
-              ? <p style={{ color: '#7f8c8d', fontStyle: 'italic' }}>Niciun jucător înregistrat.</p>
+              ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
               : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
                   {leaderboard.map((u, i) => (
                     <div key={u.name} style={{
                       ...S.lbRow,
                       ...(i===0?S.lbGold:i===1?S.lbSilver:i===2?S.lbBronze:{}),
-                      ...(u.name===currentUser?.name ? { boxShadow: '0 0 0 2px rgba(241,196,15,0.6)' } : {})
+                      ...(u.name===currentUser?.name ? S.lbMe : {})
                     }}>
-                      <span style={{ fontSize: 22, width: 32 }}>{i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`}</span>
-                      <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>
-                        {u.name}{u.name===currentUser?.name?' (tu)':''}
+                      <span style={{ ...S.lbRank, ...(i===0?S.lbRankGold:i===1?S.lbRankSilver:i===2?S.lbRankBronze:{}) }}>
+                        {i<3 ? i+1 : `${i+1}`}
                       </span>
-                      <span style={{ fontSize: 22, fontWeight: 800, color: '#f1c40f' }}>
-                        {u.total} <small style={{ fontWeight: 400, fontSize: 13 }}>pct</small>
+                      <span style={S.lbName}>
+                        {u.name}{u.name===currentUser?.name?<span style={S.lbYou}>tu</span>:null}
+                      </span>
+                      <span style={S.lbScore}>
+                        {u.total}<small style={S.lbScoreUnit}>pct</small>
                       </span>
                     </div>
                   ))}
@@ -462,16 +505,16 @@ export default function App() {
               )
             }
 
-            <h3 style={{ ...S.pageTitle, fontSize: 16, marginBottom: 8 }}>Pronosticuri detaliate</h3>
-            <div style={S.infoBox}>🔒 Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
-            <div style={{ overflowX: 'auto', marginTop: 12 }}>
+            <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8 }}>Pronosticuri detaliate</h3>
+            <div style={S.infoBox}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
+            <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 10, border: '1px solid rgba(212,175,55,0.18)' }}>
               <table style={S.table}>
                 <thead>
                   <tr>
                     <th style={S.th}>Meci</th>
                     {Object.keys(users).map(u => (
                       <th key={u} style={{ ...S.th, textAlign: 'center' }}>
-                        {u}{u===currentUser?.name?' 👤':''}
+                        {u}{u===currentUser?.name?' •':''}
                       </th>
                     ))}
                     <th style={{ ...S.th, textAlign: 'center' }}>Rezultat</th>
@@ -483,11 +526,11 @@ export default function App() {
                     const res = results[m.id]
                     const hasRes = res && res.home !== '' && res.away !== ''
                     return (
-                      <tr key={m.id}>
+                      <tr key={m.id} style={S.tr}>
                         <td style={{ ...S.td, minWidth: 140 }}>
-                          <div style={{ fontWeight: 600, fontSize: 11 }}>{m.home} <span style={{ color: '#7f8c8d' }}>vs</span> {m.away}</div>
-                          <div style={{ fontSize: 10, marginTop: 2, color: locked ? '#e74c3c' : '#7f8c8d' }}>
-                            {locked ? '🔒' : '⏳'} {m.date} {fmtHour(m.kickoff)}
+                          <div style={S.tdMatch}>{m.home} <span style={S.tdVs}>vs</span> {m.away}</div>
+                          <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7f9a8a' }}>
+                            {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
                         </td>
                         {Object.keys(users).map(u => {
@@ -497,20 +540,20 @@ export default function App() {
                           const isMe = u === currentUser?.name
                           return (
                             <td key={u} style={{ ...S.td, textAlign: 'center',
-                              color: pts===5?'#f39c12':pts===3?'#3498db':pts===2?'#27ae60':'inherit',
-                              fontWeight: pts ? 'bold' : 'normal' }}>
+                              color: pts===5?'#d4af37':pts===3?'#5b9bd5':pts===2?'#52b788':'inherit',
+                              fontWeight: pts ? 700 : 400 }}>
                               {(locked || isMe)
-                                ? hasPred ? `${p.home}–${p.away}` : <span style={{ color: '#4a6572' }}>–</span>
-                                : <span style={{ color: '#4a6572' }}>🔒</span>
+                                ? hasPred ? `${p.home}–${p.away}` : <span style={S.tdDash}>–</span>
+                                : <span style={S.tdDash}>•</span>
                               }
                               {pts !== null && (locked || isMe) && (
-                                <div style={{ fontSize: 10, opacity: 0.8 }}>({pts}p)</div>
+                                <div style={S.tdPts}>({pts}p)</div>
                               )}
                             </td>
                           )
                         })}
-                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 'bold' }}>
-                          {hasRes ? `${res.home}–${res.away}` : <span style={{ color: '#4a6572' }}>–</span>}
+                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, color: '#f5f1e8' }}>
+                          {hasRes ? `${res.home}–${res.away}` : <span style={S.tdDash}>–</span>}
                         </td>
                       </tr>
                     )
@@ -524,9 +567,10 @@ export default function App() {
         {/* ════ ADMIN ════ */}
         {view === 'admin' && (
           <div>
-            <h2 style={S.pageTitle}>⚙️ Panou Admin</h2>
+            <h2 style={S.pageTitle}>Panou Admin</h2>
             {!adminMode ? (
               <div style={{ ...S.card, maxWidth: 400 }}>
+                <div style={S.cardCrest}>🔑</div>
                 <p style={S.cardSub}>Introdu parola de admin pentru a introduce rezultate.</p>
                 <input style={S.input} type="password" placeholder="Parolă admin"
                   value={adminInput} onChange={e => setAdminInput(e.target.value)}
@@ -537,27 +581,27 @@ export default function App() {
               <div>
                 <div style={S.infoBox}>Introdu scorurile finale. Punctajele se calculează automat.</div>
                 {Object.entries(matchesByDay).map(([day, dayMatches]) => (
-                  <div key={day} style={{ marginBottom: 20 }}>
-                    <div style={S.dayLabel}>📅 {day}</div>
+                  <div key={day} style={{ marginBottom: 22 }}>
+                    <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
                     {dayMatches.map(m => {
                       const res = localResults[m.id] || { home: '', away: '' }
                       return (
-                        <div key={m.id} style={{ ...S.matchCard, padding: '8px 12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                            <span style={{ fontSize: 10, color: '#7f8c8d' }}>
-                              🕐 {fmtHour(m.kickoff)} · {m.group}
-                            </span>
-                            {isLocked(m.kickoff) && <span style={S.lockBadge}>🔒</span>}
+                        <div key={m.id} style={S.adminMatchCard}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+                            <span style={S.matchMeta}>{fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                            {isLocked(m.kickoff) && <span style={S.lockBadge}>Blocat</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ ...S.teamName, fontSize: 12 }}>{m.home}</span>
-                            <input style={{ ...S.scoreInput, borderColor: '#f39c12', width: 40, height: 34 }}
-                              type="number" min="0" max="20" value={res.home} placeholder="–"
-                              onChange={e => updateLocalResult(m.id, 'home', e.target.value)} />
-                            <span style={S.colon}>:</span>
-                            <input style={{ ...S.scoreInput, borderColor: '#f39c12', width: 40, height: 34 }}
-                              type="number" min="0" max="20" value={res.away} placeholder="–"
-                              onChange={e => updateLocalResult(m.id, 'away', e.target.value)} />
+                            <div style={S.scoreboardWrap}>
+                              <input style={S.scoreInputAdmin}
+                                type="number" min="0" max="20" value={res.home} placeholder="–"
+                                onChange={e => updateLocalResult(m.id, 'home', e.target.value)} />
+                              <span style={S.colon}>:</span>
+                              <input style={S.scoreInputAdmin}
+                                type="number" min="0" max="20" value={res.away} placeholder="–"
+                                onChange={e => updateLocalResult(m.id, 'away', e.target.value)} />
+                            </div>
                             <span style={{ ...S.teamName, textAlign: 'right', fontSize: 12 }}>{m.away}</span>
                           </div>
                         </div>
@@ -566,8 +610,8 @@ export default function App() {
                   </div>
                 ))}
                 <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
-                  <button style={{ ...S.btnPrimary, background: '#f39c12' }} onClick={saveResults}>
-                    💾 Salvează toate rezultatele
+                  <button style={S.btnAdminSave} onClick={saveResults}>
+                    Salvează toate rezultatele
                   </button>
                 </div>
               </div>
@@ -577,7 +621,7 @@ export default function App() {
       </main>
 
       <footer style={S.footer}>
-        ⚽ World Cup 2026 Pronosticuri &nbsp;•&nbsp; developed by <b>Adrian Barbos</b>
+        <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>EidrieN</b>
       </footer>
     </div>
   )
@@ -585,46 +629,137 @@ export default function App() {
 
 // ─── STILURI ─────────────────────────────────────────────────────────────────
 const S = {
-  root: { minHeight: '100vh', background: 'linear-gradient(160deg,#0d2137 0%,#0a3d2e 100%)', fontFamily: "'Segoe UI',system-ui,sans-serif", color: '#ecf0f1' },
-  header: { background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, zIndex: 100 },
-  headerInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' },
-  logo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoTitle: { fontSize: 15, fontWeight: 800, letterSpacing: 1, color: '#f1c40f' },
-  logoSub: { fontSize: 11, color: '#95a5a6' },
-  userBadge: { background: 'rgba(241,196,15,0.15)', color: '#f1c40f', border: '1px solid rgba(241,196,15,0.3)', padding: '4px 10px', borderRadius: 20, fontSize: 13 },
-  btnGhost: { background: 'transparent', color: '#95a5a6', border: '1px solid rgba(255,255,255,0.15)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
-  navBtn: { background: 'transparent', color: '#bdc3c7', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 },
-  navActive: { background: 'rgba(241,196,15,0.15)', color: '#f1c40f', fontWeight: 700 },
-  toast: { position: 'fixed', top: 16, right: 16, zIndex: 999, color: '#fff', padding: '10px 20px', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.4)', fontSize: 14, fontWeight: 600 },
-  main: { maxWidth: 820, margin: '0 auto', padding: '24px 16px 60px' },
+  // ── Bază / fundal de gazon adânc ──
+  root: {
+    minHeight: '100vh',
+    background: `
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 60px, transparent 60px, transparent 120px),
+      radial-gradient(ellipse 1200px 700px at 50% -10%, rgba(212,175,55,0.07), transparent 60%),
+      linear-gradient(165deg, #0a1f14 0%, #0d2818 45%, #0a1f14 100%)
+    `,
+    fontFamily: "'Inter',system-ui,sans-serif",
+    color: '#f5f1e8',
+  },
+
+  // ── Header ──
+  header: { background: 'linear-gradient(180deg, rgba(8,18,12,0.92), rgba(8,18,12,0.82))', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(212,175,55,0.22)', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.35)' },
+  headerTopLine: { height: 3, background: 'linear-gradient(90deg, transparent, #d4af37 20%, #f0d878 50%, #d4af37 80%, transparent)' },
+  headerInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px' },
+  logo: { display: 'flex', alignItems: 'center', gap: 12 },
+  logoMark: { fontSize: 22, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 35% 30%, #1a4d33, #0a1f14)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5), 0 0 0 3px rgba(212,175,55,0.08)' },
+  logoTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 16, fontWeight: 600, letterSpacing: 1.5, color: '#f5f1e8', textTransform: 'uppercase' },
+  logoYear: { color: '#d4af37' },
+  logoSub: { fontSize: 11, color: '#8fae9c', letterSpacing: 0.3 },
+  userBadge: { fontFamily: "'Oswald',sans-serif", background: 'rgba(212,175,55,0.12)', color: '#e8c96a', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 14px', borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase' },
+  btnGhost: { background: 'transparent', color: '#8fae9c', border: '1px solid rgba(245,241,232,0.18)', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
+  navWrap: { display: 'flex', gap: 2, padding: '0 16px 0' },
+  navBtn: { fontFamily: "'Oswald',sans-serif", background: 'transparent', color: '#8fae9c', border: 'none', borderBottom: '2px solid transparent', padding: '9px 16px', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase' },
+  navActive: { color: '#e8c96a', borderBottom: '2px solid #d4af37' },
+
+  // ── Toast ──
+  toast: { position: 'fixed', top: 18, right: 18, zIndex: 999, color: '#f5f1e8', padding: '11px 22px', borderRadius: 4, boxShadow: '0 8px 28px rgba(0,0,0,0.5)', fontSize: 13.5, fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)' },
+
+  main: { maxWidth: 820, margin: '0 auto', padding: '28px 16px 60px' },
   center: { display: 'flex', justifyContent: 'center', paddingTop: 40 },
-  card: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '32px 28px', textAlign: 'center', width: '100%', maxWidth: 420 },
-  cardTitle: { fontSize: 22, fontWeight: 800, marginBottom: 6, color: '#f1c40f' },
-  cardSub: { fontSize: 14, color: '#95a5a6', marginBottom: 18 },
-  input: { width: '100%', padding: '11px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#ecf0f1', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box' },
-  errMsg: { color: '#e74c3c', fontSize: 13, marginBottom: 10, textAlign: 'left' },
-  btnPrimary: { background: 'linear-gradient(135deg,#f1c40f,#e67e22)', color: '#0d2137', fontWeight: 800, border: 'none', padding: '12px 28px', borderRadius: 8, cursor: 'pointer', fontSize: 15, width: '100%' },
-  pageTitle: { fontSize: 20, fontWeight: 800, color: '#f1c40f', marginBottom: 16 },
-  infoBox: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#95a5a6', marginBottom: 16, lineHeight: 1.7 },
-  dayLabel: { fontSize: 11, fontWeight: 700, letterSpacing: 2, color: '#f1c40f', textTransform: 'uppercase', borderBottom: '1px solid rgba(241,196,15,0.2)', paddingBottom: 6, marginBottom: 8 },
-  matchCard: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 14px', marginBottom: 6 },
-  cardGold:   { borderColor: 'rgba(241,196,15,0.6)',  background: 'rgba(241,196,15,0.07)' },
-  cardBlue:   { borderColor: 'rgba(52,152,219,0.5)',  background: 'rgba(52,152,219,0.06)' },
-  cardGreen:  { borderColor: 'rgba(39,174,96,0.5)',   background: 'rgba(39,174,96,0.06)' },
-  cardLocked: { borderColor: 'rgba(231,76,60,0.2)',   background: 'rgba(231,76,60,0.03)' },
-  teamName: { flex: 1, fontSize: 13, fontWeight: 600, lineHeight: 1.3 },
-  scoreInput: { width: 46, height: 40, textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#ecf0f1', fontSize: 17, fontWeight: 700, outline: 'none' },
-  scoreDisplay: { width: 46, height: 40, textAlign: 'center', lineHeight: '40px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 6, fontSize: 17, fontWeight: 700, color: '#bdc3c7' },
-  colon: { fontSize: 18, color: '#7f8c8d', flexShrink: 0 },
-  ptsBadge: { color: '#fff', fontWeight: 700, fontSize: 11, padding: '2px 8px', borderRadius: 10 },
-  lockBadge: { fontSize: 11, fontWeight: 700, color: '#e74c3c', background: 'rgba(231,76,60,0.15)', border: '1px solid rgba(231,76,60,0.3)', padding: '2px 8px', borderRadius: 10 },
-  timerBadge: { fontSize: 11, fontWeight: 700, color: '#f39c12', background: 'rgba(243,156,18,0.15)', border: '1px solid rgba(243,156,18,0.3)', padding: '2px 8px', borderRadius: 10 },
-  lbRow: { display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px 16px' },
-  lbGold:   { borderColor: 'rgba(241,196,15,0.5)', background: 'rgba(241,196,15,0.08)' },
-  lbSilver: { borderColor: 'rgba(189,195,199,0.4)', background: 'rgba(189,195,199,0.05)' },
-  lbBronze: { borderColor: 'rgba(205,127,50,0.4)', background: 'rgba(205,127,50,0.05)' },
-  table: { width: '100%', borderCollapse: 'collapse', background: 'rgba(255,255,255,0.02)', fontSize: 12 },
-  th: { background: 'rgba(0,0,0,0.35)', padding: '8px 8px', textAlign: 'left', color: '#95a5a6', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' },
-  td: { padding: '7px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', verticalAlign: 'middle' },
-  footer: { textAlign: 'center', padding: '16px', fontSize: 12, color: '#4a6572', borderTop: '1px solid rgba(255,255,255,0.05)' },
+
+  // ── Card login/admin ──
+  card: { background: 'linear-gradient(165deg, rgba(245,241,232,0.05), rgba(245,241,232,0.02))', border: '1px solid rgba(212,175,55,0.22)', borderRadius: 10, padding: '36px 30px', textAlign: 'center', width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.35)' },
+  cardCrest: { fontSize: 38, width: 64, height: 64, lineHeight: '64px', margin: '0 auto 14px', background: 'radial-gradient(circle at 35% 30%, #1a4d33, #0a1f14)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 14px rgba(0,0,0,0.5)' },
+  cardTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 22, fontWeight: 600, marginBottom: 4, color: '#f5f1e8', letterSpacing: 1, textTransform: 'uppercase' },
+  cardDivider: { width: 40, height: 2, background: '#d4af37', margin: '10px auto 18px', opacity: 0.7 },
+  cardSub: { fontSize: 14, color: '#a9c2b3', marginBottom: 18, lineHeight: 1.5 },
+  cardSubAccent: { color: '#e8c96a' },
+
+  input: { width: '100%', padding: '12px 14px', borderRadius: 5, border: '1px solid rgba(245,241,232,0.16)', background: 'rgba(0,0,0,0.22)', color: '#f5f1e8', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box', fontFamily: "'Inter',sans-serif" },
+  errMsg: { color: '#e0717c', fontSize: 13, marginBottom: 10, textAlign: 'left' },
+  btnPrimary: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#e8c96a,#c89a2e)', color: '#0a1f14', fontWeight: 600, border: 'none', padding: '13px 28px', borderRadius: 5, cursor: 'pointer', fontSize: 14, width: '100%', letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(212,175,55,0.25)' },
+  btnAdminSave: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#3a7a57,#1f5238)', color: '#f5f1e8', fontWeight: 600, border: '1px solid rgba(212,175,55,0.3)', padding: '13px 30px', borderRadius: 5, cursor: 'pointer', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(0,0,0,0.3)' },
+
+  pageTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 19, fontWeight: 600, color: '#f5f1e8', marginBottom: 16, letterSpacing: 0.8, textTransform: 'uppercase' },
+
+  // ── Info box ──
+  infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.18)', borderRadius: 6, padding: '10px 16px', fontSize: 12.5, color: '#a9c2b3', marginBottom: 16, lineHeight: 1.7 },
+  infoPt: { color: '#a9c2b3' },
+  infoPtGold: { color: '#e8c96a' },
+  infoPtBlue: { color: '#7fb3e0' },
+  infoPtGreen: { color: '#6fcf9c' },
+  infoDot: { margin: '0 8px', color: 'rgba(212,175,55,0.4)' },
+
+  // ── Day label ──
+  dayLabel: { fontFamily: "'Oswald',sans-serif", display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, fontWeight: 500, letterSpacing: 2.5, color: '#e8c96a', textTransform: 'uppercase', marginBottom: 10 },
+  dayLabelLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.35), transparent)' },
+
+  // ── Match card (scoreboard) ──
+  matchCard: { position: 'relative', display: 'flex', background: 'rgba(0,0,0,0.18)', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
+  matchCardBody: { flex: 1, padding: '11px 14px 11px 12px' },
+  cardStripeDefault: { width: 4, background: 'rgba(245,241,232,0.08)', flexShrink: 0 },
+  cardStripeGold:   { width: 4, background: 'linear-gradient(180deg,#f0d878,#c89a2e)', flexShrink: 0 },
+  cardStripeBlue:   { width: 4, background: 'linear-gradient(180deg,#7fb3e0,#3a7ab0)', flexShrink: 0 },
+  cardStripeGreen:  { width: 4, background: 'linear-gradient(180deg,#6fcf9c,#2f9e64)', flexShrink: 0 },
+  cardStripeLocked: { width: 4, background: 'rgba(224,113,124,0.45)', flexShrink: 0 },
+  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.09), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(212,175,55,0.3)' },
+  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.08), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(127,179,224,0.25)' },
+  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.08), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(111,207,156,0.25)' },
+  cardLocked: { background: 'rgba(0,0,0,0.28)', borderColor: 'rgba(224,113,124,0.15)' },
+
+  matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7f9a8a', letterSpacing: 0.5 },
+  matchMetaDot: { color: 'rgba(212,175,55,0.5)' },
+  matchGroup: { color: '#5c7868' },
+  teamName: { flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, color: '#f5f1e8' },
+
+  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: 'rgba(0,0,0,0.35)', padding: '4px 7px', borderRadius: 4, border: '1px solid rgba(212,175,55,0.15)' },
+  scoreInput: { width: 38, height: 36, textAlign: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 3, color: '#e8c96a', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 3, color: '#e8c96a', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(245,241,232,0.1)', borderRadius: 3, fontSize: 18, fontWeight: 700, color: '#8fae9c', fontFamily: "'Oswald',monospace" },
+  colon: { fontSize: 16, color: 'rgba(212,175,55,0.5)', flexShrink: 0, fontFamily: "'Oswald',sans-serif" },
+
+  resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.06)', fontSize: 12, color: '#7f9a8a', display: 'flex', alignItems: 'center', gap: 10 },
+  resultScore: { color: '#f5f1e8', fontFamily: "'Oswald',monospace", fontSize: 13 },
+
+  ptsBadge: { fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 11, padding: '2px 9px', borderRadius: 20, letterSpacing: 0.5 },
+  ptsBadgeGold:  { color: '#0a1f14', background: 'linear-gradient(135deg,#f0d878,#c89a2e)' },
+  ptsBadgeBlue:  { color: '#0a1f14', background: 'linear-gradient(135deg,#a8d0f0,#5b9bd5)' },
+  ptsBadgeGreen: { color: '#0a1f14', background: 'linear-gradient(135deg,#9fe6c0,#52b788)' },
+  ptsBadgeZero:  { color: '#cdd9d1', background: 'rgba(245,241,232,0.12)' },
+
+  lockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e0717c', background: 'rgba(224,113,124,0.12)', border: '1px solid rgba(224,113,124,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.8, textTransform: 'uppercase' },
+  timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e8c96a', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.5 },
+  liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#e8c96a', display: 'inline-block' },
+
+  emptyMsg: { color: '#7f9a8a', fontStyle: 'italic', fontSize: 13.5 },
+
+  // ── Leaderboard ──
+  lbRow: { display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(0,0,0,0.18)', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 6, padding: '13px 16px' },
+  lbGold:   { borderColor: 'rgba(212,175,55,0.45)', background: 'linear-gradient(90deg, rgba(212,175,55,0.1), rgba(0,0,0,0.18))' },
+  lbSilver: { borderColor: 'rgba(192,200,196,0.35)', background: 'linear-gradient(90deg, rgba(192,200,196,0.06), rgba(0,0,0,0.18))' },
+  lbBronze: { borderColor: 'rgba(205,140,80,0.35)', background: 'linear-gradient(90deg, rgba(205,140,80,0.07), rgba(0,0,0,0.18))' },
+  lbMe: { boxShadow: '0 0 0 1.5px rgba(212,175,55,0.55)' },
+  lbRank: { fontFamily: "'Oswald',sans-serif", fontSize: 14, fontWeight: 700, width: 28, height: 28, lineHeight: '28px', textAlign: 'center', borderRadius: '50%', color: '#a9c2b3', background: 'rgba(245,241,232,0.06)', flexShrink: 0 },
+  lbRankGold:   { color: '#0a1f14', background: 'linear-gradient(135deg,#f0d878,#c89a2e)' },
+  lbRankSilver: { color: '#0a1f14', background: 'linear-gradient(135deg,#e4e8e6,#b7c0bc)' },
+  lbRankBronze: { color: '#0a1f14', background: 'linear-gradient(135deg,#dba36e,#a8714a)' },
+  lbName: { flex: 1, fontSize: 14.5, fontWeight: 600, color: '#f5f1e8' },
+  lbYou: { fontFamily: "'Oswald',sans-serif", fontSize: 9.5, color: '#0a1f14', background: '#e8c96a', padding: '1px 6px', borderRadius: 3, marginLeft: 8, letterSpacing: 0.6, textTransform: 'uppercase', verticalAlign: 'middle' },
+  lbScore: { fontFamily: "'Oswald',monospace", fontSize: 21, fontWeight: 700, color: '#e8c96a' },
+  lbScoreUnit: { fontWeight: 400, fontSize: 11, color: '#a9c2b3', marginLeft: 3, fontFamily: "'Inter',sans-serif" },
+
+  // ── Tabel detaliat ──
+  table: { width: '100%', borderCollapse: 'collapse', background: 'rgba(0,0,0,0.15)', fontSize: 12 },
+  th: { fontFamily: "'Oswald',sans-serif", background: 'rgba(0,0,0,0.4)', padding: '9px 10px', textAlign: 'left', color: '#a9c2b3', fontWeight: 500, letterSpacing: 0.6, borderBottom: '1px solid rgba(212,175,55,0.2)', whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 10.5 },
+  tr: {},
+  td: { padding: '8px 10px', borderBottom: '1px solid rgba(245,241,232,0.05)', verticalAlign: 'middle' },
+  tdMatch: { fontWeight: 600, fontSize: 11.5, color: '#f5f1e8' },
+  tdVs: { color: '#5c7868', fontWeight: 400 },
+  tdMeta: { fontSize: 10, marginTop: 3 },
+  tdDash: { color: '#4a6a58' },
+  tdPts: { fontSize: 9.5, opacity: 0.85, fontFamily: "'Oswald',sans-serif" },
+
+  // ── Admin match card ──
+  adminMatchCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 6, padding: '9px 13px', marginBottom: 6 },
+
+  // ── Footer ──
+  footer: { textAlign: 'center', padding: '20px', fontSize: 12, color: '#5c7868', borderTop: '1px solid rgba(212,175,55,0.1)' },
+  footerBall: { marginRight: 4 },
+  footerDot: { margin: '0 8px', color: 'rgba(212,175,55,0.35)' },
+  footerName: { color: '#a9c2b3' },
 }
