@@ -40,7 +40,7 @@ async function hashPass(pass) {
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── State ──
-  const [view, setView]           = useState('login')      // login | predict | leaderboard | admin
+  const [view, setView]           = useState('login')      // login | predict | leaderboard | mypool | admin
   const [loginStep, setLoginStep] = useState('name')       // name | password | register
   const [inputName, setInputName] = useState('')
   const [inputPass, setInputPass] = useState('')
@@ -252,6 +252,7 @@ export default function App() {
 
   const leaderboard = Object.keys(users).map(name => {
     let total = 0
+    let exact = 0
     MATCHES.forEach(m => {
       const pred = predictions[name]?.[m.id]
       if (!pred || pred.home === '' || pred.away === '') return
@@ -259,8 +260,9 @@ export default function App() {
       if (!res || res.home === '' || res.away === '') return
       const pts = calcScore(pred, res)
       if (pts) total += pts
+      if (pts === 5) exact += 1
     })
-    return { name, total }
+    return { name, total, exact }
   }).sort((a, b) => b.total - a.total)
 
   // ─── MECIURI SORTATE ─────────────────────────────────────────────────────
@@ -272,6 +274,25 @@ export default function App() {
     acc[m.date].push(m)
     return acc
   }, {})
+
+  // ─── POOL-UL MEU ─────────────────────────────────────────────────────────
+
+  const myPredictedMatches = currentUser
+    ? sortedMatches.filter(m => {
+        const p = predictions[currentUser.name]?.[m.id]
+        return p && p.home !== '' && p.away !== ''
+      })
+    : []
+
+  const myPlayedMatches = myPredictedMatches.filter(m => {
+    const res = results[m.id]
+    return res && res.home !== '' && res.away !== ''
+  })
+
+  const myUpcomingMatches = myPredictedMatches.filter(m => {
+    const res = results[m.id]
+    return !(res && res.home !== '' && res.away !== '')
+  })
 
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
@@ -297,7 +318,7 @@ export default function App() {
         </div>
         {currentUser && (
           <nav style={S.navWrap}>
-            {[['predict','Pronosticuri'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
+            {[['predict','Pronosticuri'],['mypool','Pool-ul meu'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
               <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }} onClick={() => setView(k)}>{l}</button>
             ))}
           </nav>
@@ -475,6 +496,83 @@ export default function App() {
           </div>
         )}
 
+        {/* ════ POOL-UL MEU ════ */}
+        {view === 'mypool' && currentUser && (
+          <div>
+            <h2 style={S.pageTitle}>Pool-ul meu</h2>
+            <div style={S.infoBox}>Aici vezi doar meciurile la care ai pus deja un pronostic.</div>
+
+            <div style={S.dayLabel}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
+            {myPlayedMatches.length === 0
+              ? <p style={{ ...S.emptyMsg, marginBottom: 22 }}>Niciun meci jucat din pronosticurile tale încă.</p>
+              : myPlayedMatches.map(m => {
+                  const pred = predictions[currentUser.name][m.id]
+                  const res  = results[m.id]
+                  const pts  = calcScore(pred, res)
+                  let cardStyle = { ...S.matchCard }
+                  let stripeStyle = S.cardStripeDefault
+                  if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
+                  else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
+                  else if (pts === 2) { cardStyle = { ...cardStyle, ...S.cardGreen }; stripeStyle = S.cardStripeGreen }
+                  return (
+                    <div key={m.id} style={cardStyle}>
+                      <div style={stripeStyle} />
+                      <div style={S.matchCardBody}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                          <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={S.teamName}>{m.home}</span>
+                          <div style={S.scoreboardWrap}>
+                            <div style={S.scoreDisplay}>{pred.home}</div>
+                            <span style={S.colon}>:</span>
+                            <div style={S.scoreDisplay}>{pred.away}</div>
+                          </div>
+                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                        </div>
+                        <div style={S.resultRow}>
+                          Rezultat final <b style={S.resultScore}>{res.home} – {res.away}</b>
+                          <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
+                            +{pts}p
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+            }
+
+            <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Următoare<span style={S.dayLabelLine} /></div>
+            {myUpcomingMatches.length === 0
+              ? <p style={S.emptyMsg}>Niciun pronostic activ pentru meciurile viitoare.</p>
+              : myUpcomingMatches.map(m => {
+                  const pred = predictions[currentUser.name][m.id]
+                  const locked = isLocked(m.kickoff)
+                  return (
+                    <div key={m.id} style={{ ...S.matchCard, ...(locked ? S.cardLocked : {}) }}>
+                      <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
+                      <div style={S.matchCardBody}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                          <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                          {locked && <span style={S.lockBadge}>Blocat</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={S.teamName}>{m.home}</span>
+                          <div style={S.scoreboardWrap}>
+                            <div style={S.scoreDisplay}>{pred.home}</div>
+                            <span style={S.colon}>:</span>
+                            <div style={S.scoreDisplay}>{pred.away}</div>
+                          </div>
+                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+            }
+          </div>
+        )}
+
         {/* ════ CLASAMENT ════ */}
         {view === 'leaderboard' && (
           <div>
@@ -483,29 +581,50 @@ export default function App() {
             {leaderboard.length === 0
               ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
               : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
-                  {leaderboard.map((u, i) => (
-                    <div key={u.name} style={{
-                      ...S.lbRow,
-                      ...(i===0?S.lbGold:i===1?S.lbSilver:i===2?S.lbBronze:{}),
-                      ...(u.name===currentUser?.name ? S.lbMe : {})
-                    }}>
-                      <span style={{ ...S.lbRank, ...(i===0?S.lbRankGold:i===1?S.lbRankSilver:i===2?S.lbRankBronze:{}) }}>
-                        {i<3 ? i+1 : `${i+1}`}
-                      </span>
-                      <span style={S.lbName}>
-                        {u.name}{u.name===currentUser?.name?<span style={S.lbYou}>tu</span>:null}
-                      </span>
-                      <span style={S.lbScore}>
-                        {u.total}<small style={S.lbScoreUnit}>pct</small>
-                      </span>
+                <>
+                  {/* ── Podium top 3 ── */}
+                  <div style={S.podiumWrap}>
+                    {leaderboard.slice(0, 3).map((u, i) => (
+                      <div key={u.name} style={{ ...S.podiumCard, ...(u.name===currentUser?.name ? S.podiumMe : {}) }}>
+                        <div style={{ ...S.podiumAvatar, ...(i===0?S.avatarGold:i===1?S.avatarSilver:S.avatarBronze) }}>
+                          {u.name.slice(0,2).toUpperCase()}
+                        </div>
+                        <div style={S.podiumName}>{u.name}{u.name===currentUser?.name?' (tu)':''}</div>
+                        <div style={S.podiumScore}>{u.total}<small style={S.podiumScoreUnit}>p</small></div>
+                        <div style={S.podiumRank}>{i+1}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── Tabel clasament complet ── */}
+                  <div style={S.lbTableWrap}>
+                    <div style={S.lbTableHead}>
+                      <span style={S.lbColRank}>#</span>
+                      <span style={S.lbColName}>Jucător</span>
+                      <span style={S.lbColExact}>Exacte</span>
+                      <span style={S.lbColPts}>Puncte</span>
                     </div>
-                  ))}
-                </div>
+                    {leaderboard.map((u, i) => (
+                      <div key={u.name} style={{ ...S.lbTableRow, ...(u.name===currentUser?.name ? S.lbRowMe : {}) }}>
+                        <span style={{ ...S.lbColRank, color: u.name===currentUser?.name ? '#0a0a0c' : '#f0b429' }}>{i+1}</span>
+                        <span style={S.lbColName}>
+                          <span style={{ ...S.lbAvatarSm, ...(i===0?S.avatarGold:i===1?S.avatarSilver:i===2?S.avatarBronze:S.avatarDefault) }}>
+                            {u.name.slice(0,2).toUpperCase()}
+                          </span>
+                          <span style={{ color: u.name===currentUser?.name ? '#0a0a0c' : '#f5f1e8', fontWeight: u.name===currentUser?.name ? 700 : 600 }}>
+                            {u.name}{u.name===currentUser?.name?<span style={S.lbYou}>tu</span>:null}
+                          </span>
+                        </span>
+                        <span style={{ ...S.lbColExact, color: u.name===currentUser?.name ? '#0a0a0c' : '#9b9ba3' }}>{u.exact}</span>
+                        <span style={{ ...S.lbColPts, color: u.name===currentUser?.name ? '#0a0a0c' : '#f0b429' }}>{u.total}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )
             }
 
-            <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8 }}>Pronosticuri detaliate</h3>
+            <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8, marginTop: 28 }}>Pronosticuri detaliate</h3>
             <div style={S.infoBox}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
             <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 10, border: '1px solid rgba(212,175,55,0.18)' }}>
               <table style={S.table}>
@@ -529,7 +648,7 @@ export default function App() {
                       <tr key={m.id} style={S.tr}>
                         <td style={{ ...S.td, minWidth: 140 }}>
                           <div style={S.tdMatch}>{m.home} <span style={S.tdVs}>vs</span> {m.away}</div>
-                          <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7f9a8a' }}>
+                          <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7d7d86' }}>
                             {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
                         </td>
@@ -629,137 +748,147 @@ export default function App() {
 
 // ─── STILURI ─────────────────────────────────────────────────────────────────
 const S = {
-  // ── Bază / fundal de gazon adânc ──
+  // ── Bază / fundal negru, odihnitor (ca în model) ──
   root: {
     minHeight: '100vh',
     background: `
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 60px, transparent 60px, transparent 120px),
-      radial-gradient(ellipse 1200px 700px at 50% -10%, rgba(212,175,55,0.07), transparent 60%),
-      linear-gradient(165deg, #0a1f14 0%, #0d2818 45%, #0a1f14 100%)
+      radial-gradient(ellipse 1000px 600px at 50% -10%, rgba(212,175,55,0.05), transparent 60%),
+      linear-gradient(180deg, #0a0a0c 0%, #0e0e11 100%)
     `,
     fontFamily: "'Inter',system-ui,sans-serif",
     color: '#f5f1e8',
   },
 
   // ── Header ──
-  header: { background: 'linear-gradient(180deg, rgba(8,18,12,0.92), rgba(8,18,12,0.82))', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(212,175,55,0.22)', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.35)' },
+  header: { background: 'rgba(10,10,12,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(212,175,55,0.18)', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.45)' },
   headerTopLine: { height: 3, background: 'linear-gradient(90deg, transparent, #d4af37 20%, #f0d878 50%, #d4af37 80%, transparent)' },
   headerInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px' },
   logo: { display: 'flex', alignItems: 'center', gap: 12 },
-  logoMark: { fontSize: 22, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 35% 30%, #1a4d33, #0a1f14)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5), 0 0 0 3px rgba(212,175,55,0.08)' },
+  logoMark: { fontSize: 22, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' },
   logoTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 16, fontWeight: 600, letterSpacing: 1.5, color: '#f5f1e8', textTransform: 'uppercase' },
   logoYear: { color: '#d4af37' },
-  logoSub: { fontSize: 11, color: '#8fae9c', letterSpacing: 0.3 },
-  userBadge: { fontFamily: "'Oswald',sans-serif", background: 'rgba(212,175,55,0.12)', color: '#e8c96a', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 14px', borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase' },
-  btnGhost: { background: 'transparent', color: '#8fae9c', border: '1px solid rgba(245,241,232,0.18)', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
-  navWrap: { display: 'flex', gap: 2, padding: '0 16px 0' },
-  navBtn: { fontFamily: "'Oswald',sans-serif", background: 'transparent', color: '#8fae9c', border: 'none', borderBottom: '2px solid transparent', padding: '9px 16px', cursor: 'pointer', fontSize: 12.5, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase' },
-  navActive: { color: '#e8c96a', borderBottom: '2px solid #d4af37' },
+  logoSub: { fontSize: 11, color: '#8a8a93', letterSpacing: 0.3 },
+  userBadge: { fontFamily: "'Oswald',sans-serif", background: 'rgba(212,175,55,0.12)', color: '#f0b429', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 14px', borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase' },
+  btnGhost: { background: 'transparent', color: '#8a8a93', border: '1px solid rgba(245,241,232,0.16)', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
+  navWrap: { display: 'flex', gap: 2, padding: '0 16px 0', overflowX: 'auto' },
+  navBtn: { fontFamily: "'Oswald',sans-serif", background: 'transparent', color: '#8a8a93', border: 'none', borderBottom: '2px solid transparent', padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase', whiteSpace: 'nowrap' },
+  navActive: { color: '#f0b429', borderBottom: '2px solid #f0b429' },
 
   // ── Toast ──
-  toast: { position: 'fixed', top: 18, right: 18, zIndex: 999, color: '#f5f1e8', padding: '11px 22px', borderRadius: 4, boxShadow: '0 8px 28px rgba(0,0,0,0.5)', fontSize: 13.5, fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)' },
+  toast: { position: 'fixed', top: 18, right: 18, zIndex: 999, color: '#f5f1e8', padding: '11px 22px', borderRadius: 4, boxShadow: '0 8px 28px rgba(0,0,0,0.6)', fontSize: 13.5, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' },
 
   main: { maxWidth: 820, margin: '0 auto', padding: '28px 16px 60px' },
   center: { display: 'flex', justifyContent: 'center', paddingTop: 40 },
 
   // ── Card login/admin ──
-  card: { background: 'linear-gradient(165deg, rgba(245,241,232,0.05), rgba(245,241,232,0.02))', border: '1px solid rgba(212,175,55,0.22)', borderRadius: 10, padding: '36px 30px', textAlign: 'center', width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.35)' },
-  cardCrest: { fontSize: 38, width: 64, height: 64, lineHeight: '64px', margin: '0 auto 14px', background: 'radial-gradient(circle at 35% 30%, #1a4d33, #0a1f14)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 14px rgba(0,0,0,0.5)' },
+  card: { background: '#131317', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 10, padding: '36px 30px', textAlign: 'center', width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
+  cardCrest: { fontSize: 38, width: 64, height: 64, lineHeight: '64px', margin: '0 auto 14px', background: '#1a1a20', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 14px rgba(0,0,0,0.6)' },
   cardTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 22, fontWeight: 600, marginBottom: 4, color: '#f5f1e8', letterSpacing: 1, textTransform: 'uppercase' },
-  cardDivider: { width: 40, height: 2, background: '#d4af37', margin: '10px auto 18px', opacity: 0.7 },
-  cardSub: { fontSize: 14, color: '#a9c2b3', marginBottom: 18, lineHeight: 1.5 },
-  cardSubAccent: { color: '#e8c96a' },
+  cardDivider: { width: 40, height: 2, background: '#f0b429', margin: '10px auto 18px', opacity: 0.8 },
+  cardSub: { fontSize: 14, color: '#9b9ba3', marginBottom: 18, lineHeight: 1.5 },
+  cardSubAccent: { color: '#f0b429' },
 
-  input: { width: '100%', padding: '12px 14px', borderRadius: 5, border: '1px solid rgba(245,241,232,0.16)', background: 'rgba(0,0,0,0.22)', color: '#f5f1e8', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box', fontFamily: "'Inter',sans-serif" },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 5, border: '1px solid rgba(245,241,232,0.14)', background: 'rgba(0,0,0,0.3)', color: '#f5f1e8', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box', fontFamily: "'Inter',sans-serif" },
   errMsg: { color: '#e0717c', fontSize: 13, marginBottom: 10, textAlign: 'left' },
-  btnPrimary: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#e8c96a,#c89a2e)', color: '#0a1f14', fontWeight: 600, border: 'none', padding: '13px 28px', borderRadius: 5, cursor: 'pointer', fontSize: 14, width: '100%', letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(212,175,55,0.25)' },
-  btnAdminSave: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#3a7a57,#1f5238)', color: '#f5f1e8', fontWeight: 600, border: '1px solid rgba(212,175,55,0.3)', padding: '13px 30px', borderRadius: 5, cursor: 'pointer', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(0,0,0,0.3)' },
+  btnPrimary: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#f4c430,#d49a1f)', color: '#0a0a0c', fontWeight: 600, border: 'none', padding: '13px 28px', borderRadius: 5, cursor: 'pointer', fontSize: 14, width: '100%', letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(240,180,41,0.22)' },
+  btnAdminSave: { fontFamily: "'Oswald',sans-serif", background: '#1d1d24', color: '#f5f1e8', fontWeight: 600, border: '1px solid rgba(212,175,55,0.3)', padding: '13px 30px', borderRadius: 5, cursor: 'pointer', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(0,0,0,0.4)' },
 
   pageTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 19, fontWeight: 600, color: '#f5f1e8', marginBottom: 16, letterSpacing: 0.8, textTransform: 'uppercase' },
 
   // ── Info box ──
-  infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.18)', borderRadius: 6, padding: '10px 16px', fontSize: 12.5, color: '#a9c2b3', marginBottom: 16, lineHeight: 1.7 },
-  infoPt: { color: '#a9c2b3' },
-  infoPtGold: { color: '#e8c96a' },
+  infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.16)', borderRadius: 6, padding: '10px 16px', fontSize: 12.5, color: '#9b9ba3', marginBottom: 16, lineHeight: 1.7 },
+  infoPt: { color: '#9b9ba3' },
+  infoPtGold: { color: '#f0b429' },
   infoPtBlue: { color: '#7fb3e0' },
   infoPtGreen: { color: '#6fcf9c' },
   infoDot: { margin: '0 8px', color: 'rgba(212,175,55,0.4)' },
 
   // ── Day label ──
-  dayLabel: { fontFamily: "'Oswald',sans-serif", display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, fontWeight: 500, letterSpacing: 2.5, color: '#e8c96a', textTransform: 'uppercase', marginBottom: 10 },
-  dayLabelLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.35), transparent)' },
+  dayLabel: { fontFamily: "'Oswald',sans-serif", display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, fontWeight: 500, letterSpacing: 2.5, color: '#f0b429', textTransform: 'uppercase', marginBottom: 10 },
+  dayLabelLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)' },
 
   // ── Match card (scoreboard) ──
-  matchCard: { position: 'relative', display: 'flex', background: 'rgba(0,0,0,0.18)', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
+  matchCard: { position: 'relative', display: 'flex', background: '#131317', border: '1px solid rgba(245,241,232,0.06)', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
   matchCardBody: { flex: 1, padding: '11px 14px 11px 12px' },
-  cardStripeDefault: { width: 4, background: 'rgba(245,241,232,0.08)', flexShrink: 0 },
-  cardStripeGold:   { width: 4, background: 'linear-gradient(180deg,#f0d878,#c89a2e)', flexShrink: 0 },
+  cardStripeDefault: { width: 4, background: 'rgba(245,241,232,0.07)', flexShrink: 0 },
+  cardStripeGold:   { width: 4, background: 'linear-gradient(180deg,#f4c430,#c89a2e)', flexShrink: 0 },
   cardStripeBlue:   { width: 4, background: 'linear-gradient(180deg,#7fb3e0,#3a7ab0)', flexShrink: 0 },
   cardStripeGreen:  { width: 4, background: 'linear-gradient(180deg,#6fcf9c,#2f9e64)', flexShrink: 0 },
-  cardStripeLocked: { width: 4, background: 'rgba(224,113,124,0.45)', flexShrink: 0 },
-  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.09), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(212,175,55,0.3)' },
-  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.08), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(127,179,224,0.25)' },
-  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.08), rgba(0,0,0,0.18) 30%)', borderColor: 'rgba(111,207,156,0.25)' },
-  cardLocked: { background: 'rgba(0,0,0,0.28)', borderColor: 'rgba(224,113,124,0.15)' },
+  cardStripeLocked: { width: 4, background: 'rgba(224,113,124,0.4)', flexShrink: 0 },
+  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.08), #131317 35%)', borderColor: 'rgba(212,175,55,0.28)' },
+  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.07), #131317 35%)', borderColor: 'rgba(127,179,224,0.22)' },
+  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.07), #131317 35%)', borderColor: 'rgba(111,207,156,0.22)' },
+  cardLocked: { background: '#101013', borderColor: 'rgba(224,113,124,0.14)' },
 
-  matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7f9a8a', letterSpacing: 0.5 },
+  matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7d7d86', letterSpacing: 0.5 },
   matchMetaDot: { color: 'rgba(212,175,55,0.5)' },
-  matchGroup: { color: '#5c7868' },
+  matchGroup: { color: '#5a5a62' },
   teamName: { flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, color: '#f5f1e8' },
 
-  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: 'rgba(0,0,0,0.35)', padding: '4px 7px', borderRadius: 4, border: '1px solid rgba(212,175,55,0.15)' },
-  scoreInput: { width: 38, height: 36, textAlign: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 3, color: '#e8c96a', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 3, color: '#e8c96a', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(245,241,232,0.1)', borderRadius: 3, fontSize: 18, fontWeight: 700, color: '#8fae9c', fontFamily: "'Oswald',monospace" },
+  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: '#0a0a0c', padding: '4px 7px', borderRadius: 4, border: '1px solid rgba(212,175,55,0.15)' },
+  scoreInput: { width: 38, height: 36, textAlign: 'center', background: '#0a0a0c', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 3, color: '#f0b429', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: '#0a0a0c', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 3, color: '#f0b429', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: '#0a0a0c', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 3, fontSize: 18, fontWeight: 700, color: '#8a8a93', fontFamily: "'Oswald',monospace" },
   colon: { fontSize: 16, color: 'rgba(212,175,55,0.5)', flexShrink: 0, fontFamily: "'Oswald',sans-serif" },
 
-  resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.06)', fontSize: 12, color: '#7f9a8a', display: 'flex', alignItems: 'center', gap: 10 },
+  resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.05)', fontSize: 12, color: '#7d7d86', display: 'flex', alignItems: 'center', gap: 10 },
   resultScore: { color: '#f5f1e8', fontFamily: "'Oswald',monospace", fontSize: 13 },
 
   ptsBadge: { fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 11, padding: '2px 9px', borderRadius: 20, letterSpacing: 0.5 },
-  ptsBadgeGold:  { color: '#0a1f14', background: 'linear-gradient(135deg,#f0d878,#c89a2e)' },
-  ptsBadgeBlue:  { color: '#0a1f14', background: 'linear-gradient(135deg,#a8d0f0,#5b9bd5)' },
-  ptsBadgeGreen: { color: '#0a1f14', background: 'linear-gradient(135deg,#9fe6c0,#52b788)' },
-  ptsBadgeZero:  { color: '#cdd9d1', background: 'rgba(245,241,232,0.12)' },
+  ptsBadgeGold:  { color: '#0a0a0c', background: 'linear-gradient(135deg,#f4c430,#c89a2e)' },
+  ptsBadgeBlue:  { color: '#0a0a0c', background: 'linear-gradient(135deg,#a8d0f0,#5b9bd5)' },
+  ptsBadgeGreen: { color: '#0a0a0c', background: 'linear-gradient(135deg,#9fe6c0,#52b788)' },
+  ptsBadgeZero:  { color: '#cdd0d6', background: 'rgba(245,241,232,0.1)' },
 
   lockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e0717c', background: 'rgba(224,113,124,0.12)', border: '1px solid rgba(224,113,124,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.8, textTransform: 'uppercase' },
-  timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e8c96a', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.5 },
-  liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#e8c96a', display: 'inline-block' },
+  timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.5 },
+  liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#f0b429', display: 'inline-block' },
 
-  emptyMsg: { color: '#7f9a8a', fontStyle: 'italic', fontSize: 13.5 },
+  emptyMsg: { color: '#7d7d86', fontStyle: 'italic', fontSize: 13.5 },
 
-  // ── Leaderboard ──
-  lbRow: { display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(0,0,0,0.18)', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 6, padding: '13px 16px' },
-  lbGold:   { borderColor: 'rgba(212,175,55,0.45)', background: 'linear-gradient(90deg, rgba(212,175,55,0.1), rgba(0,0,0,0.18))' },
-  lbSilver: { borderColor: 'rgba(192,200,196,0.35)', background: 'linear-gradient(90deg, rgba(192,200,196,0.06), rgba(0,0,0,0.18))' },
-  lbBronze: { borderColor: 'rgba(205,140,80,0.35)', background: 'linear-gradient(90deg, rgba(205,140,80,0.07), rgba(0,0,0,0.18))' },
-  lbMe: { boxShadow: '0 0 0 1.5px rgba(212,175,55,0.55)' },
-  lbRank: { fontFamily: "'Oswald',sans-serif", fontSize: 14, fontWeight: 700, width: 28, height: 28, lineHeight: '28px', textAlign: 'center', borderRadius: '50%', color: '#a9c2b3', background: 'rgba(245,241,232,0.06)', flexShrink: 0 },
-  lbRankGold:   { color: '#0a1f14', background: 'linear-gradient(135deg,#f0d878,#c89a2e)' },
-  lbRankSilver: { color: '#0a1f14', background: 'linear-gradient(135deg,#e4e8e6,#b7c0bc)' },
-  lbRankBronze: { color: '#0a1f14', background: 'linear-gradient(135deg,#dba36e,#a8714a)' },
-  lbName: { flex: 1, fontSize: 14.5, fontWeight: 600, color: '#f5f1e8' },
-  lbYou: { fontFamily: "'Oswald',sans-serif", fontSize: 9.5, color: '#0a1f14', background: '#e8c96a', padding: '1px 6px', borderRadius: 3, marginLeft: 8, letterSpacing: 0.6, textTransform: 'uppercase', verticalAlign: 'middle' },
-  lbScore: { fontFamily: "'Oswald',monospace", fontSize: 21, fontWeight: 700, color: '#e8c96a' },
-  lbScoreUnit: { fontWeight: 400, fontSize: 11, color: '#a9c2b3', marginLeft: 3, fontFamily: "'Inter',sans-serif" },
+  // ── Podium top 3 (ca în model) ──
+  podiumWrap: { display: 'flex', gap: 10, marginBottom: 22 },
+  podiumCard: { flex: 1, background: '#131317', border: '1px solid rgba(245,241,232,0.07)', borderRadius: 10, padding: '18px 10px 14px', textAlign: 'center', position: 'relative' },
+  podiumMe: { border: '1px solid rgba(240,180,41,0.55)', boxShadow: '0 0 0 1px rgba(240,180,41,0.25), 0 10px 24px rgba(240,180,41,0.08)' },
+  podiumAvatar: { width: 52, height: 52, lineHeight: '52px', borderRadius: '50%', margin: '0 auto 10px', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 16, border: '2px solid rgba(245,241,232,0.1)' },
+  avatarGold:   { background: 'linear-gradient(135deg,#f4c430,#c89a2e)', color: '#0a0a0c', borderColor: 'rgba(244,196,48,0.5)' },
+  avatarSilver: { background: 'linear-gradient(135deg,#e4e8e6,#aab2af)', color: '#0a0a0c', borderColor: 'rgba(200,205,202,0.5)' },
+  avatarBronze: { background: 'linear-gradient(135deg,#dba36e,#a06a3e)', color: '#0a0a0c', borderColor: 'rgba(219,163,110,0.5)' },
+  avatarDefault: { background: '#26262e', color: '#cdd0d6', borderColor: 'rgba(245,241,232,0.08)' },
+  podiumName: { fontSize: 13, fontWeight: 600, color: '#f5f1e8', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  podiumScore: { fontFamily: "'Oswald',monospace", fontSize: 20, fontWeight: 700, color: '#f0b429' },
+  podiumScoreUnit: { fontSize: 11, fontWeight: 400, color: '#9b9ba3', marginLeft: 2, fontFamily: "'Inter',sans-serif" },
+  podiumRank: { position: 'absolute', top: 8, left: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 700, color: '#5a5a62' },
 
-  // ── Tabel detaliat ──
-  table: { width: '100%', borderCollapse: 'collapse', background: 'rgba(0,0,0,0.15)', fontSize: 12 },
-  th: { fontFamily: "'Oswald',sans-serif", background: 'rgba(0,0,0,0.4)', padding: '9px 10px', textAlign: 'left', color: '#a9c2b3', fontWeight: 500, letterSpacing: 0.6, borderBottom: '1px solid rgba(212,175,55,0.2)', whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 10.5 },
+  // ── Tabel clasament (ca în model: # / Jucător / Exacte / Puncte) ──
+  lbTableWrap: { border: '1px solid rgba(245,241,232,0.07)', borderRadius: 10, overflow: 'hidden', marginBottom: 28 },
+  lbTableHead: { display: 'flex', alignItems: 'center', padding: '11px 16px', background: '#0a0a0c', borderBottom: '1px solid rgba(245,241,232,0.06)' },
+  lbColRank: { width: 28, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
+  lbColName: { flex: 1, display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
+  lbColExact: { width: 64, textAlign: 'center', fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
+  lbColPts: { width: 70, textAlign: 'right', fontFamily: "'Oswald',sans-serif", fontSize: 12, fontWeight: 700, color: '#f0b429', letterSpacing: 0.6, textTransform: 'uppercase' },
+  lbTableRow: { display: 'flex', alignItems: 'center', padding: '13px 16px', background: '#131317', borderBottom: '1px solid rgba(245,241,232,0.05)' },
+  lbRowMe: { background: 'linear-gradient(90deg, #f0b429, #e0a526)' },
+  lbAvatarSm: { width: 28, height: 28, lineHeight: '28px', borderRadius: '50%', textAlign: 'center', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 10.5, flexShrink: 0 },
+  lbYou: { fontFamily: "'Oswald',sans-serif", fontSize: 9, color: '#f0b429', background: 'rgba(10,10,12,0.15)', padding: '1px 6px', borderRadius: 3, marginLeft: 8, letterSpacing: 0.6, textTransform: 'uppercase', verticalAlign: 'middle' },
+
+  // ── Tabel detaliat (Pronosticuri) ──
+  table: { width: '100%', borderCollapse: 'collapse', background: '#131317', fontSize: 12 },
+  th: { fontFamily: "'Oswald',sans-serif", background: '#0a0a0c', padding: '9px 10px', textAlign: 'left', color: '#9b9ba3', fontWeight: 500, letterSpacing: 0.6, borderBottom: '1px solid rgba(212,175,55,0.18)', whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 10.5 },
   tr: {},
-  td: { padding: '8px 10px', borderBottom: '1px solid rgba(245,241,232,0.05)', verticalAlign: 'middle' },
+  td: { padding: '8px 10px', borderBottom: '1px solid rgba(245,241,232,0.04)', verticalAlign: 'middle' },
   tdMatch: { fontWeight: 600, fontSize: 11.5, color: '#f5f1e8' },
-  tdVs: { color: '#5c7868', fontWeight: 400 },
+  tdVs: { color: '#5a5a62', fontWeight: 400 },
   tdMeta: { fontSize: 10, marginTop: 3 },
-  tdDash: { color: '#4a6a58' },
+  tdDash: { color: '#46464d' },
   tdPts: { fontSize: 9.5, opacity: 0.85, fontFamily: "'Oswald',sans-serif" },
 
   // ── Admin match card ──
-  adminMatchCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 6, padding: '9px 13px', marginBottom: 6 },
+  adminMatchCard: { background: '#131317', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 6, padding: '9px 13px', marginBottom: 6 },
 
   // ── Footer ──
-  footer: { textAlign: 'center', padding: '20px', fontSize: 12, color: '#5c7868', borderTop: '1px solid rgba(212,175,55,0.1)' },
+  footer: { textAlign: 'center', padding: '20px', fontSize: 12, color: '#5a5a62', borderTop: '1px solid rgba(212,175,55,0.1)' },
   footerBall: { marginRight: 4 },
-  footerDot: { margin: '0 8px', color: 'rgba(212,175,55,0.35)' },
-  footerName: { color: '#a9c2b3' },
+  footerDot: { margin: '0 8px', color: 'rgba(212,175,55,0.3)' },
+  footerName: { color: '#9b9ba3' },
 }
