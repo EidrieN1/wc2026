@@ -254,7 +254,7 @@ export default function App() {
             <span style={{ fontSize: 26 }}>⚽</span>
             <div>
               <div style={S.logoTitle}>CUPA MONDIALĂ 2026</div>
-              <div style={S.logoSub}>Pariorii de la APE</div>
+              <div style={S.logoSub}>Pariorii de la AERO PART EXPERT</div>
             </div>
           </div>
           {currentUser && (
@@ -577,7 +577,7 @@ export default function App() {
       </main>
 
       <footer style={S.footer}>
-        ⚽ World Cup 2026 Pronosticuri &nbsp;•&nbsp; developed by <b>EidrieN</b>
+        ⚽ World Cup 2026 Pronosticuri &nbsp;•&nbsp; developed by <b>Adrian Barbos</b>
       </footer>
     </div>
   )
