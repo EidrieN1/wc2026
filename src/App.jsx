@@ -154,7 +154,7 @@ export default function App() {
     setInputPass('')
     setInputPass2('')
     setLoginError('')
-    showToast(`Bun venit, ${name}! 🎉`)
+    showToast(`Salut BOSS!, ${name}! 🎉`)
   }
 
   const handleLogout = () => {
