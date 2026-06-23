@@ -1,0 +1,77 @@
+// Toate meciurile CM 2026 rămase de jucat, ora României (EEST = UTC+3)
+export const MATCHES = [
+  // ── 23 IUNIE ─────────────────────────────────────────────────────────────
+  { id:  1, group: "Grupa I",      home: "🇫🇷 Franța",          away: "🇮🇶 Irak",              date: "23 Iun", kickoff: "2026-06-23T00:00:00" },
+  { id:  2, group: "Grupa I",      home: "🇳🇴 Norvegia",        away: "🇸🇳 Senegal",           date: "23 Iun", kickoff: "2026-06-23T03:00:00" },
+  { id:  3, group: "Grupa J",      home: "🇯🇴 Iordania",        away: "🇩🇿 Algeria",           date: "23 Iun", kickoff: "2026-06-23T06:00:00" },
+  { id:  4, group: "Grupa K",      home: "🇵🇹 Portugalia",      away: "🇺🇿 Uzbekistan",        date: "23 Iun", kickoff: "2026-06-23T20:00:00" },
+  { id:  5, group: "Grupa L",      home: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Anglia",          away: "🇬🇭 Ghana",             date: "23 Iun", kickoff: "2026-06-23T23:00:00" },
+  // ── 24 IUNIE ─────────────────────────────────────────────────────────────
+  { id:  6, group: "Grupa L",      home: "🇵🇦 Panama",          away: "🇭🇷 Croația",           date: "24 Iun", kickoff: "2026-06-24T02:00:00" },
+  { id:  7, group: "Grupa K",      home: "🇨🇴 Columbia",        away: "🇨🇩 RD Congo",          date: "24 Iun", kickoff: "2026-06-24T05:00:00" },
+  { id:  8, group: "Grupa B",      home: "🇨🇭 Elveția",         away: "🇨🇦 Canada",            date: "24 Iun", kickoff: "2026-06-24T22:00:00" },
+  { id:  9, group: "Grupa B",      home: "🇧🇦 Bosnia-Herț.",    away: "🇶🇦 Qatar",             date: "24 Iun", kickoff: "2026-06-24T22:00:00" },
+  // ── 25 IUNIE ─────────────────────────────────────────────────────────────
+  { id: 10, group: "Grupa C",      home: "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scoția",          away: "🇧🇷 Brazilia",          date: "25 Iun", kickoff: "2026-06-25T01:00:00" },
+  { id: 11, group: "Grupa C",      home: "🇲🇦 Maroc",           away: "🇭🇹 Haiti",             date: "25 Iun", kickoff: "2026-06-25T01:00:00" },
+  { id: 12, group: "Grupa A",      home: "🇨🇿 Cehia",           away: "🇲🇽 Mexic",            date: "25 Iun", kickoff: "2026-06-25T04:00:00" },
+  { id: 13, group: "Grupa A",      home: "🇿🇦 Africa de Sud",   away: "🇰🇷 Coreea de Sud",    date: "25 Iun", kickoff: "2026-06-25T04:00:00" },
+  { id: 14, group: "Grupa E",      home: "🇨🇼 Curaçao",         away: "🇨🇮 Coasta de Fildeș", date: "25 Iun", kickoff: "2026-06-25T23:00:00" },
+  { id: 15, group: "Grupa E",      home: "🇪🇨 Ecuador",         away: "🇩🇪 Germania",         date: "25 Iun", kickoff: "2026-06-25T23:00:00" },
+  // ── 26 IUNIE ─────────────────────────────────────────────────────────────
+  { id: 16, group: "Grupa F",      home: "🇯🇵 Japonia",         away: "🇸🇪 Suedia",           date: "26 Iun", kickoff: "2026-06-26T02:00:00" },
+  { id: 17, group: "Grupa F",      home: "🇹🇳 Tunisia",         away: "🇳🇱 Olanda",           date: "26 Iun", kickoff: "2026-06-26T02:00:00" },
+  { id: 18, group: "Grupa D",      home: "🇹🇷 Turcia",          away: "🇺🇸 SUA",              date: "26 Iun", kickoff: "2026-06-26T05:00:00" },
+  { id: 19, group: "Grupa D",      home: "🇵🇾 Paraguay",        away: "🇦🇺 Australia",        date: "26 Iun", kickoff: "2026-06-26T05:00:00" },
+  { id: 20, group: "Grupa I",      home: "🇳🇴 Norvegia",        away: "🇫🇷 Franța",           date: "26 Iun", kickoff: "2026-06-26T22:00:00" },
+  { id: 21, group: "Grupa I",      home: "🇸🇳 Senegal",         away: "🇮🇶 Irak",             date: "26 Iun", kickoff: "2026-06-26T22:00:00" },
+  // ── 27 IUNIE ─────────────────────────────────────────────────────────────
+  { id: 22, group: "Grupa H",      home: "🇨🇻 Capul Verde",     away: "🇸🇦 Arabia Saudită",   date: "27 Iun", kickoff: "2026-06-27T03:00:00" },
+  { id: 23, group: "Grupa H",      home: "🇺🇾 Uruguay",         away: "🇪🇸 Spania",           date: "27 Iun", kickoff: "2026-06-27T03:00:00" },
+  { id: 24, group: "Grupa G",      home: "🇪🇬 Egipt",           away: "🇮🇷 Iran",             date: "27 Iun", kickoff: "2026-06-27T06:00:00" },
+  { id: 25, group: "Grupa G",      home: "🇳🇿 Noua Zeelandă",  away: "🇧🇪 Belgia",           date: "27 Iun", kickoff: "2026-06-27T06:00:00" },
+  { id: 26, group: "Grupa J",      home: "🇦🇷 Argentina",       away: "🇯🇴 Iordania",         date: "27 Iun", kickoff: "2026-06-27T22:00:00" },
+  { id: 27, group: "Grupa J",      home: "🇦🇹 Austria",         away: "🇩🇿 Algeria",          date: "27 Iun", kickoff: "2026-06-27T22:00:00" },
+  // ── 28 IUNIE ─────────────────────────────────────────────────────────────
+  { id: 28, group: "Grupa K",      home: "🇵🇹 Portugalia",      away: "🇨🇴 Columbia",         date: "28 Iun", kickoff: "2026-06-28T02:30:00" },
+  { id: 29, group: "Grupa K",      home: "🇨🇩 RD Congo",        away: "🇺🇿 Uzbekistan",       date: "28 Iun", kickoff: "2026-06-28T02:30:00" },
+  { id: 30, group: "Grupa L",      home: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Anglia",          away: "🇵🇦 Panama",           date: "28 Iun", kickoff: "2026-06-28T22:00:00" },
+  { id: 31, group: "Grupa L",      home: "🇭🇷 Croația",         away: "🇬🇭 Ghana",            date: "28 Iun", kickoff: "2026-06-28T22:00:00" },
+  // ── 16-IMI ───────────────────────────────────────────────────────────────
+  { id: 32, group: "16-imi",       home: "1 Grupa A",           away: "2 Grupa B",            date: "29 Iun", kickoff: "2026-06-29T02:00:00" },
+  { id: 33, group: "16-imi",       home: "1 Grupa B",           away: "2 Grupa A",            date: "29 Iun", kickoff: "2026-06-29T22:00:00" },
+  { id: 34, group: "16-imi",       home: "1 Grupa C",           away: "Locul 3",              date: "30 Iun", kickoff: "2026-06-30T02:00:00" },
+  { id: 35, group: "16-imi",       home: "1 Grupa D",           away: "2 Grupa C",            date: "30 Iun", kickoff: "2026-06-30T22:00:00" },
+  { id: 36, group: "16-imi",       home: "1 Grupa E",           away: "Locul 3",              date: "1 Iul",  kickoff: "2026-07-01T02:00:00" },
+  { id: 37, group: "16-imi",       home: "1 Grupa F",           away: "2 Grupa E",            date: "1 Iul",  kickoff: "2026-07-01T22:00:00" },
+  { id: 38, group: "16-imi",       home: "1 Grupa G",           away: "Locul 3",              date: "2 Iul",  kickoff: "2026-07-02T02:00:00" },
+  { id: 39, group: "16-imi",       home: "1 Grupa H",           away: "2 Grupa G",            date: "2 Iul",  kickoff: "2026-07-02T22:00:00" },
+  { id: 40, group: "16-imi",       home: "1 Grupa I",           away: "Locul 3",              date: "3 Iul",  kickoff: "2026-07-03T02:00:00" },
+  { id: 41, group: "16-imi",       home: "1 Grupa J",           away: "2 Grupa I",            date: "3 Iul",  kickoff: "2026-07-03T22:00:00" },
+  { id: 42, group: "16-imi",       home: "1 Grupa K",           away: "Locul 3",              date: "4 Iul",  kickoff: "2026-07-04T02:00:00" },
+  { id: 43, group: "16-imi",       home: "1 Grupa L",           away: "2 Grupa K",            date: "4 Iul",  kickoff: "2026-07-04T22:00:00" },
+  { id: 44, group: "16-imi",       home: "2 Grupa D",           away: "2 Grupa F",            date: "5 Iul",  kickoff: "2026-07-05T02:00:00" },
+  { id: 45, group: "16-imi",       home: "2 Grupa H",           away: "2 Grupa J",            date: "5 Iul",  kickoff: "2026-07-05T22:00:00" },
+  { id: 46, group: "16-imi",       home: "2 Grupa L",           away: "Locul 3",              date: "6 Iul",  kickoff: "2026-07-06T02:00:00" },
+  { id: 47, group: "16-imi",       home: "2 Grupa K",           away: "2 Grupa L",            date: "6 Iul",  kickoff: "2026-07-06T22:00:00" },
+  // ── OPTIMI ───────────────────────────────────────────────────────────────
+  { id: 48, group: "Optimi",       home: "Câșt. M1",            away: "Câșt. M2",             date: "7 Iul",  kickoff: "2026-07-07T02:00:00" },
+  { id: 49, group: "Optimi",       home: "Câșt. M3",            away: "Câșt. M4",             date: "7 Iul",  kickoff: "2026-07-07T22:00:00" },
+  { id: 50, group: "Optimi",       home: "Câșt. M5",            away: "Câșt. M6",             date: "8 Iul",  kickoff: "2026-07-08T02:00:00" },
+  { id: 51, group: "Optimi",       home: "Câșt. M7",            away: "Câșt. M8",             date: "8 Iul",  kickoff: "2026-07-08T22:00:00" },
+  { id: 52, group: "Optimi",       home: "Câșt. M9",            away: "Câșt. M10",            date: "9 Iul",  kickoff: "2026-07-09T02:00:00" },
+  { id: 53, group: "Optimi",       home: "Câșt. M11",           away: "Câșt. M12",            date: "9 Iul",  kickoff: "2026-07-09T22:00:00" },
+  { id: 54, group: "Optimi",       home: "Câșt. M13",           away: "Câșt. M14",            date: "10 Iul", kickoff: "2026-07-10T02:00:00" },
+  { id: 55, group: "Optimi",       home: "Câșt. M15",           away: "Câșt. M16",            date: "10 Iul", kickoff: "2026-07-10T22:00:00" },
+  // ── SFERTURI ─────────────────────────────────────────────────────────────
+  { id: 56, group: "Sferturi",     home: "Câșt. Opt. 1",        away: "Câșt. Opt. 2",         date: "11 Iul", kickoff: "2026-07-11T22:00:00" },
+  { id: 57, group: "Sferturi",     home: "Câșt. Opt. 3",        away: "Câșt. Opt. 4",         date: "12 Iul", kickoff: "2026-07-12T02:00:00" },
+  { id: 58, group: "Sferturi",     home: "Câșt. Opt. 5",        away: "Câșt. Opt. 6",         date: "12 Iul", kickoff: "2026-07-12T22:00:00" },
+  { id: 59, group: "Sferturi",     home: "Câșt. Opt. 7",        away: "Câșt. Opt. 8",         date: "13 Iul", kickoff: "2026-07-13T02:00:00" },
+  // ── SEMIFINALE ───────────────────────────────────────────────────────────
+  { id: 60, group: "Semifinale",   home: "Câșt. Sf. 1",         away: "Câșt. Sf. 2",          date: "15 Iul", kickoff: "2026-07-15T22:00:00" },
+  { id: 61, group: "Semifinale",   home: "Câșt. Sf. 3",         away: "Câșt. Sf. 4",          date: "16 Iul", kickoff: "2026-07-16T22:00:00" },
+  // ── FINALE ───────────────────────────────────────────────────────────────
+  { id: 62, group: "Finală mică",  home: "Perd. SF1",            away: "Perd. SF2",            date: "19 Iul", kickoff: "2026-07-19T00:00:00" },
+  { id: 63, group: "Finală mare",  home: "Câșt. SF1",            away: "Câșt. SF2",            date: "19 Iul", kickoff: "2026-07-19T22:00:00" },
+]
