@@ -102,6 +102,10 @@ export default function App() {
     style.textContent = `
       @keyframes wcPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
       @keyframes wcRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes wcPrizeIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes wcPrizePulse { 0%,100% { transform: scale(1); text-shadow: 0 0 24px rgba(212,175,55,0.5); } 50% { transform: scale(1.045); text-shadow: 0 0 44px rgba(244,196,48,0.85), 0 0 80px rgba(212,175,55,0.3); } }
+      @keyframes wcShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+      @keyframes wcGlow { 0%,100% { box-shadow: 0 0 18px rgba(212,175,55,0.18), inset 0 0 18px rgba(212,175,55,0.04); } 50% { box-shadow: 0 0 38px rgba(212,175,55,0.38), inset 0 0 28px rgba(212,175,55,0.09); } }
       @media (prefers-reduced-motion: reduce) {
         .wc-pulse-dot { animation: none !important; }
         .wc-rise { animation: none !important; }
@@ -936,7 +940,60 @@ export default function App() {
               ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
               : (
                 <>
-                  {/* ── Podium top 3 ── */}
+                  {/* ── Prize Pool Banner ── */}
+                  <div className="wc-rise" style={{
+                    animation: 'wcPrizeIn 0.5s cubic-bezier(0.22,1,0.36,1) both, wcGlow 3s ease-in-out 0.5s infinite',
+                    background: 'linear-gradient(135deg, #17151a 0%, #1e1a10 50%, #17151a 100%)',
+                    border: '1px solid rgba(212,175,55,0.45)',
+                    borderRadius: 20,
+                    padding: '22px 24px 18px',
+                    textAlign: 'center',
+                    marginBottom: 22,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* shimmer line top */}
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                      background: 'linear-gradient(90deg, transparent 0%, #f4c430 30%, #fff8dc 50%, #f4c430 70%, transparent 100%)',
+                      backgroundSize: '200% auto',
+                      animation: 'wcShimmer 2.4s linear infinite',
+                    }} />
+                    {/* shimmer line bottom */}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
+                      background: 'linear-gradient(90deg, transparent 0%, #f4c430 30%, #fff8dc 50%, #f4c430 70%, transparent 100%)',
+                      backgroundSize: '200% auto',
+                      animation: 'wcShimmer 2.4s linear infinite reverse',
+                    }} />
+
+                    <div style={{ fontFamily: "'Oswald',sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: 3, color: '#9b8a3a', textTransform: 'uppercase', marginBottom: 10 }}>
+                      🏆 &nbsp;Prize Pool
+                    </div>
+
+                    <div style={{
+                      fontFamily: "'Oswald',sans-serif",
+                      fontSize: 58,
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                      lineHeight: 1,
+                      background: 'linear-gradient(180deg, #fff5b0 0%, #f4c430 40%, #c89a2e 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      animation: 'wcPrizePulse 2.8s ease-in-out infinite',
+                      display: 'inline-block',
+                      marginBottom: 8,
+                    }}>
+                      {(Object.keys(users).length * 50).toLocaleString('ro-RO')} <span style={{ fontSize: 32 }}>RON</span>
+                    </div>
+
+                    <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 12.5, color: '#7d7060', marginTop: 4, letterSpacing: 0.3 }}>
+                      {Object.keys(users).length} participanți &nbsp;×&nbsp; 50 RON
+                    </div>
+                  </div>
+
+                  {/* ── Podium top 3 ── */
                   <div style={S.podiumWrap}>
                     {leaderboard.slice(0, 3).map((u, i) => (
                       <div key={u.name} style={{ ...S.podiumCard, ...(u.name===currentUser?.name ? S.podiumMe : {}) }}>
