@@ -993,7 +993,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* ── Podium top 3 ── */
+                  {/* ── Podium top 3 ── */}
                   <div style={S.podiumWrap}>
                     {leaderboard.slice(0, 3).map((u, i) => (
                       <div key={u.name} style={{ ...S.podiumCard, ...(u.name===currentUser?.name ? S.podiumMe : {}) }}>
