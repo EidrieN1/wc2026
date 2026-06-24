@@ -498,12 +498,31 @@ export default function App() {
               ['special','Speciale'],
               ['mypool','Pool-ul meu'],
               ['leaderboard','Clasament'],
-              ['chat', unread > 0 ? `Chat (${unread})` : 'Chat'],
               ['admin','Admin']
             ].map(([k,l]) => (
-              <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}), ...(k==='chat' && unread > 0 ? { color: '#f0b429' } : {}) }}
-                onClick={() => { setView(k); if (k === 'chat') markChatRead() }}>{l}</button>
+              <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }}
+                onClick={() => setView(k)}>{l}</button>
             ))}
+            <button
+              style={{ ...S.navBtn, ...(view==='chat' ? S.navActive : {}), position: 'relative' }}
+              onClick={() => { setView('chat'); markChatRead() }}
+            >
+              Chat
+              {unread > 0 && (
+                <span className="wc-pulse-dot" style={{
+                  position: 'absolute',
+                  top: 4,
+                  left: 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#f0b429',
+                  boxShadow: '0 0 0 2px rgba(240,180,41,0.35)',
+                  animation: 'wcPulse 1.2s ease-in-out infinite',
+                  display: 'block',
+                }} />
+              )}
+            </button>
           </nav>
         )}
       </header>
