@@ -68,6 +68,7 @@ export default function App() {
   const [messages, setMessages]   = useState([])
   const [chatInput, setChatInput] = useState('')
   const [lastSeenTs, setLastSeenTs] = useState(() => Date.now())
+  const [chatOpen, setChatOpen]     = useState(false)
   const [predictions, setPreds]   = useState({})           // { name: { matchId: {home,away} } }
   const [results, setResults]     = useState({})           // { matchId: {home,away} }
   const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
@@ -452,6 +453,7 @@ export default function App() {
   const unread = messages.filter(m => m.ts > lastSeenTs && m.user !== currentUser?.name).length
 
   const markChatRead = () => setLastSeenTs(Date.now())
+  const toggleChat = () => { setChatOpen(o => !o); if (!chatOpen) markChatRead() }
 
   const sendMessage = async () => {
     const text = chatInput.trim()
@@ -503,26 +505,7 @@ export default function App() {
               <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }}
                 onClick={() => setView(k)}>{l}</button>
             ))}
-            <button
-              style={{ ...S.navBtn, ...(view==='chat' ? S.navActive : {}), position: 'relative' }}
-              onClick={() => { setView('chat'); markChatRead() }}
-            >
-              Chat
-              {unread > 0 && (
-                <span className="wc-pulse-dot" style={{
-                  position: 'absolute',
-                  top: 4,
-                  left: 4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: '#f0b429',
-                  boxShadow: '0 0 0 2px rgba(240,180,41,0.35)',
-                  animation: 'wcPulse 1.2s ease-in-out infinite',
-                  display: 'block',
-                }} />
-              )}
-            </button>
+
           </nav>
         )}
       </header>
@@ -959,7 +942,7 @@ export default function App() {
               ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
               : (
                 <>
-                  {/* ── Prize Pool Banner ── */}
+                  {/* ── Jackpot Banner ── */}
                   <div className="wc-rise" style={{
                     animation: 'wcPrizeIn 0.5s cubic-bezier(0.22,1,0.36,1) both, wcGlow 3s ease-in-out 0.5s infinite',
                     background: 'linear-gradient(135deg, #17151a 0%, #1e1a10 50%, #17151a 100%)',
@@ -1192,74 +1175,135 @@ export default function App() {
           </div>
         )}
 
-        {/* ════ CHAT ════ */}
-        {view === 'chat' && currentUser && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', minHeight: 400 }}>
-            <h2 style={S.pageTitle}>Chat</h2>
 
-            {/* Messages */}
-            <div className="wc-scroll" style={S.chatBox}
-              ref={el => { if (el) el.scrollTop = el.scrollHeight }}>
-              {messages.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#46464d', marginTop: 40, fontSize: 13.5 }}>
-                  Niciun mesaj încă. Fii primul! 👋
-                </div>
-              )}
-              {messages.map((msg, i) => {
-                const isMe = msg.user === currentUser.name
-                const showName = i === 0 || messages[i - 1].user !== msg.user
-                const time = msg.ts
-                  ? new Date(msg.ts).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
-                  : ''
-                return (
-                  <div key={msg.id} style={{ marginBottom: 4, display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                    {showName && (
-                      <div style={{ fontSize: 10.5, color: '#5a5a62', marginBottom: 3, marginLeft: isMe ? 0 : 4, marginRight: isMe ? 4 : 0, fontFamily: "'Oswald',sans-serif", letterSpacing: 0.5 }}>
-                        {isMe ? 'Tu' : msg.user} · {time}
-                      </div>
-                    )}
-                    <div style={{
-                      maxWidth: '76%',
-                      padding: '9px 14px',
-                      borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      background: isMe
-                        ? 'linear-gradient(135deg,#d4af37,#b8922a)'
-                        : '#26262e',
-                      border: isMe ? 'none' : '1px solid rgba(245,241,232,0.06)',
-                      color: isMe ? '#0a0a0c' : '#f5f1e8',
-                      fontSize: 13.5,
-                      fontWeight: isMe ? 600 : 400,
-                      lineHeight: 1.45,
-                      wordBreak: 'break-word',
-                    }}>
-                      {msg.text}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Input */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
-              <input
-                style={{ ...S.input, marginBottom: 0, flex: 1 }}
-                placeholder="Scrie un mesaj..."
-                value={chatInput}
-                maxLength={500}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              />
-              <button
-                style={{ ...S.btnPrimary, width: 'auto', padding: '11px 22px', flexShrink: 0 }}
-                onClick={sendMessage}
-              >
-                Trimite
-              </button>
-            </div>
-          </div>
-        )}
       </main>
 
+
+      {/* ── FLOATING CHAT ── */}
+      {currentUser && (
+        <>
+          {/* Chat window */}
+          {chatOpen && (
+            <div style={{
+              position: 'fixed', bottom: 80, right: 16, zIndex: 300,
+              width: 'min(360px, calc(100vw - 32px))',
+              height: 'min(480px, calc(100vh - 120px))',
+              background: '#17171c',
+              border: '1px solid rgba(212,175,55,0.3)',
+              borderRadius: 20,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.1)',
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
+              animation: 'wcPrizeIn 0.25s cubic-bezier(0.22,1,0.36,1) both',
+            }}>
+              {/* Header */}
+              <div style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid rgba(212,175,55,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: '#1e1e24',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: 13, fontWeight: 600, letterSpacing: 1, color: '#f0b429', textTransform: 'uppercase' }}>
+                  💬 Chat — Pariorii de la APE
+                </span>
+                <button onClick={() => setChatOpen(false)} style={{
+                  background: 'rgba(245,241,232,0.06)', border: 'none',
+                  color: '#9b9ba3', fontSize: 16, width: 28, height: 28,
+                  borderRadius: 8, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                }}>✕</button>
+              </div>
+
+              {/* Messages */}
+              <div className="wc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 3 }}
+                ref={el => { if (el) el.scrollTop = el.scrollHeight }}>
+                {messages.length === 0 && (
+                  <div style={{ textAlign: 'center', color: '#46464d', marginTop: 40, fontSize: 13 }}>
+                    Niciun mesaj încă. Fii primul! 👋
+                  </div>
+                )}
+                {messages.map((msg, i) => {
+                  const isMe = msg.user === currentUser.name
+                  const showName = i === 0 || messages[i-1].user !== msg.user
+                  const time = msg.ts ? new Date(msg.ts).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : ''
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', marginBottom: 2 }}>
+                      {showName && (
+                        <div style={{ fontSize: 10, color: '#5a5a62', marginBottom: 2, marginLeft: isMe ? 0 : 4, marginRight: isMe ? 4 : 0, fontFamily: "'Oswald',sans-serif", letterSpacing: 0.5 }}>
+                          {isMe ? 'Tu' : msg.user} · {time}
+                        </div>
+                      )}
+                      <div style={{
+                        maxWidth: '80%', padding: '7px 12px',
+                        borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                        background: isMe ? 'linear-gradient(135deg,#d4af37,#b8922a)' : '#26262e',
+                        border: isMe ? 'none' : '1px solid rgba(245,241,232,0.06)',
+                        color: isMe ? '#0a0a0c' : '#f5f1e8',
+                        fontSize: 13, fontWeight: isMe ? 600 : 400,
+                        lineHeight: 1.45, wordBreak: 'break-word',
+                      }}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Input */}
+              <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(212,175,55,0.1)', display: 'flex', gap: 8, flexShrink: 0, background: '#1a1a20' }}>
+                <input
+                  style={{ flex: 1, padding: '9px 13px', borderRadius: 10, border: '1px solid rgba(212,175,55,0.25)', background: '#15151a', color: '#f5f1e8', fontSize: 13, outline: 'none', fontFamily: "'Inter',sans-serif" }}
+                  placeholder="Scrie un mesaj..."
+                  value={chatInput}
+                  maxLength={500}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                  autoFocus
+                />
+                <button onClick={sendMessage} style={{
+                  background: 'linear-gradient(135deg,#d4af37,#b8922a)',
+                  border: 'none', borderRadius: 10, padding: '9px 14px',
+                  color: '#0a0a0c', fontWeight: 700, fontSize: 13,
+                  cursor: 'pointer', flexShrink: 0, fontFamily: "'Oswald',sans-serif",
+                  letterSpacing: 0.5,
+                }}>↑</button>
+              </div>
+            </div>
+          )}
+
+          {/* FAB button */}
+          <button
+            onClick={toggleChat}
+            style={{
+              position: 'fixed', bottom: 16, right: 16, zIndex: 301,
+              width: 52, height: 52, borderRadius: '50%',
+              background: chatOpen
+                ? '#26262e'
+                : 'linear-gradient(135deg,#d4af37,#b8922a)',
+              border: chatOpen ? '1px solid rgba(212,175,55,0.3)' : 'none',
+              boxShadow: chatOpen
+                ? '0 4px 16px rgba(0,0,0,0.4)'
+                : '0 4px 20px rgba(212,175,55,0.4), 0 2px 8px rgba(0,0,0,0.3)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {chatOpen ? '✕' : '💬'}
+            {!chatOpen && unread > 0 && (
+              <span className="wc-pulse-dot" style={{
+                position: 'absolute', top: 2, right: 2,
+                width: 10, height: 10, borderRadius: '50%',
+                background: '#e0717c',
+                border: '2px solid #17171c',
+                animation: 'wcPulse 1.2s ease-in-out infinite',
+              }} />
+            )}
+          </button>
+        </>
+      )}
       <footer style={S.footer}>
         <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>Adrian Barbos</b>
       </footer>
