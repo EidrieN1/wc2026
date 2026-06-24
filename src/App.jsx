@@ -303,10 +303,16 @@ export default function App() {
         <div style={S.headerTopLine} />
         <div style={S.headerInner}>
           <div style={S.logo}>
-            <div style={S.logoMark}>⚽</div>
+            <div style={S.logoMark}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L20 5.5V11C20 16 16.5 19.5 12 21C7.5 19.5 4 16 4 11V5.5L12 2Z" fill="none" stroke="#f0b429" strokeWidth="1.4" strokeLinejoin="round"/>
+                <path d="M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11 13.5 11.5 12 12.5V13.5" stroke="#f0b429" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <circle cx="12" cy="16" r="0.9" fill="#f0b429"/>
+              </svg>
+            </div>
             <div>
               <div style={S.logoTitle}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
-              <div style={S.logoSub}>Pariorii de AERO PART EXPERT</div>
+              <div style={S.logoSub}>Pronosticuri cu prietenii</div>
             </div>
           </div>
           {currentUser && (
@@ -339,7 +345,13 @@ export default function App() {
         {view === 'login' && (
           <div style={S.center}>
             <div style={S.card}>
-              <div style={S.cardCrest}>⚽</div>
+              <div style={S.cardCrest}>
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L20 5.5V11C20 16 16.5 19.5 12 21C7.5 19.5 4 16 4 11V5.5L12 2Z" fill="none" stroke="#f0b429" strokeWidth="1.3" strokeLinejoin="round"/>
+                  <path d="M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11 13.5 11.5 12 12.5V13.5" stroke="#f0b429" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  <circle cx="12" cy="16" r="0.85" fill="#f0b429"/>
+                </svg>
+              </div>
               <h2 style={S.cardTitle}>Intră în joc</h2>
               <div style={S.cardDivider} />
 
@@ -606,17 +618,17 @@ export default function App() {
                     </div>
                     {leaderboard.map((u, i) => (
                       <div key={u.name} style={{ ...S.lbTableRow, ...(u.name===currentUser?.name ? S.lbRowMe : {}) }}>
-                        <span style={{ ...S.lbColRank, color: u.name===currentUser?.name ? '#0a0a0c' : '#f0b429' }}>{i+1}</span>
-                        <span style={S.lbColName}>
+                        <span style={S.lbValRank}>{i+1}</span>
+                        <span style={S.lbValName}>
                           <span style={{ ...S.lbAvatarSm, ...(i===0?S.avatarGold:i===1?S.avatarSilver:i===2?S.avatarBronze:S.avatarDefault) }}>
                             {u.name.slice(0,2).toUpperCase()}
                           </span>
-                          <span style={{ color: u.name===currentUser?.name ? '#0a0a0c' : '#f5f1e8', fontWeight: u.name===currentUser?.name ? 700 : 600 }}>
+                          <span style={{ color: '#f5f1e8', fontWeight: u.name===currentUser?.name ? 700 : 600 }}>
                             {u.name}{u.name===currentUser?.name?<span style={S.lbYou}>tu</span>:null}
                           </span>
                         </span>
-                        <span style={{ ...S.lbColExact, color: u.name===currentUser?.name ? '#0a0a0c' : '#9b9ba3' }}>{u.exact}</span>
-                        <span style={{ ...S.lbColPts, color: u.name===currentUser?.name ? '#0a0a0c' : '#f0b429' }}>{u.total}</span>
+                        <span style={S.lbValExact}>{u.exact}</span>
+                        <span style={S.lbValPts}>{u.total}</span>
                       </div>
                     ))}
                   </div>
@@ -626,14 +638,14 @@ export default function App() {
 
             <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8, marginTop: 28 }}>Pronosticuri detaliate</h3>
             <div style={S.infoBox}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
-            <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 10, border: '1px solid rgba(212,175,55,0.18)' }}>
+            <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 16, border: '1px solid rgba(212,175,55,0.18)' }}>
               <table style={S.table}>
                 <thead>
                   <tr>
                     <th style={S.th}>Meci</th>
                     {Object.keys(users).map(u => (
-                      <th key={u} style={{ ...S.th, textAlign: 'center' }}>
-                        {u}{u===currentUser?.name?' •':''}
+                      <th key={u} style={{ ...S.th, textAlign: 'center', ...(u===currentUser?.name ? S.thMe : {}) }}>
+                        {u}
                       </th>
                     ))}
                     <th style={{ ...S.th, textAlign: 'center' }}>Rezultat</th>
@@ -659,6 +671,7 @@ export default function App() {
                           const isMe = u === currentUser?.name
                           return (
                             <td key={u} style={{ ...S.td, textAlign: 'center',
+                              ...(isMe ? S.tdMe : {}),
                               color: pts===5?'#d4af37':pts===3?'#5b9bd5':pts===2?'#52b788':'inherit',
                               fontWeight: pts ? 700 : 400 }}>
                               {(locked || isMe)
@@ -740,7 +753,7 @@ export default function App() {
       </main>
 
       <footer style={S.footer}>
-        <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>Adrian Barbos</b>
+        <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>EidrieN</b>
       </footer>
     </div>
   )
@@ -753,50 +766,50 @@ const S = {
     minHeight: '100vh',
     background: `
       radial-gradient(ellipse 1000px 600px at 50% -10%, rgba(212,175,55,0.05), transparent 60%),
-      linear-gradient(180deg, #0a0a0c 0%, #0e0e11 100%)
+      linear-gradient(180deg, #17171c 0%, #1c1c22 100%)
     `,
     fontFamily: "'Inter',system-ui,sans-serif",
     color: '#f5f1e8',
   },
 
   // ── Header ──
-  header: { background: 'rgba(10,10,12,0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(212,175,55,0.18)', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.45)' },
+  header: { background: 'rgba(23,23,28,0.92)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(212,175,55,0.18)', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.35)' },
   headerTopLine: { height: 3, background: 'linear-gradient(90deg, transparent, #d4af37 20%, #f0d878 50%, #d4af37 80%, transparent)' },
   headerInner: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px' },
   logo: { display: 'flex', alignItems: 'center', gap: 12 },
-  logoMark: { fontSize: 22, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)' },
+  logoMark: { width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#22222a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.4)' },
   logoTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 16, fontWeight: 600, letterSpacing: 1.5, color: '#f5f1e8', textTransform: 'uppercase' },
   logoYear: { color: '#d4af37' },
   logoSub: { fontSize: 11, color: '#8a8a93', letterSpacing: 0.3 },
-  userBadge: { fontFamily: "'Oswald',sans-serif", background: 'rgba(212,175,55,0.12)', color: '#f0b429', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 14px', borderRadius: 3, fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase' },
-  btnGhost: { background: 'transparent', color: '#8a8a93', border: '1px solid rgba(245,241,232,0.16)', padding: '6px 14px', borderRadius: 3, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
+  userBadge: { fontFamily: "'Oswald',sans-serif", background: 'rgba(212,175,55,0.12)', color: '#f0b429', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase' },
+  btnGhost: { background: 'transparent', color: '#8a8a93', border: '1px solid rgba(245,241,232,0.16)', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
   navWrap: { display: 'flex', gap: 2, padding: '0 16px 0', overflowX: 'auto' },
   navBtn: { fontFamily: "'Oswald',sans-serif", background: 'transparent', color: '#8a8a93', border: 'none', borderBottom: '2px solid transparent', padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase', whiteSpace: 'nowrap' },
   navActive: { color: '#f0b429', borderBottom: '2px solid #f0b429' },
 
   // ── Toast ──
-  toast: { position: 'fixed', top: 18, right: 18, zIndex: 999, color: '#f5f1e8', padding: '11px 22px', borderRadius: 4, boxShadow: '0 8px 28px rgba(0,0,0,0.6)', fontSize: 13.5, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' },
+  toast: { position: 'fixed', top: 18, right: 18, zIndex: 999, color: '#f5f1e8', padding: '11px 22px', borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,0.6)', fontSize: 13.5, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)' },
 
   main: { maxWidth: 820, margin: '0 auto', padding: '28px 16px 60px' },
   center: { display: 'flex', justifyContent: 'center', paddingTop: 40 },
 
   // ── Card login/admin ──
-  card: { background: '#131317', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 10, padding: '36px 30px', textAlign: 'center', width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
-  cardCrest: { fontSize: 38, width: 64, height: 64, lineHeight: '64px', margin: '0 auto 14px', background: '#1a1a20', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 14px rgba(0,0,0,0.6)' },
+  card: { background: '#1e1e24', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 20, padding: '36px 30px', textAlign: 'center', width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' },
+  cardCrest: { width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', background: '#22222a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '50%', boxShadow: 'inset 0 0 14px rgba(0,0,0,0.5)' },
   cardTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 22, fontWeight: 600, marginBottom: 4, color: '#f5f1e8', letterSpacing: 1, textTransform: 'uppercase' },
   cardDivider: { width: 40, height: 2, background: '#f0b429', margin: '10px auto 18px', opacity: 0.8 },
   cardSub: { fontSize: 14, color: '#9b9ba3', marginBottom: 18, lineHeight: 1.5 },
   cardSubAccent: { color: '#f0b429' },
 
-  input: { width: '100%', padding: '12px 14px', borderRadius: 5, border: '1px solid rgba(245,241,232,0.14)', background: 'rgba(0,0,0,0.3)', color: '#f5f1e8', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box', fontFamily: "'Inter',sans-serif" },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(245,241,232,0.14)', background: 'rgba(0,0,0,0.3)', color: '#f5f1e8', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box', fontFamily: "'Inter',sans-serif" },
   errMsg: { color: '#e0717c', fontSize: 13, marginBottom: 10, textAlign: 'left' },
-  btnPrimary: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#f4c430,#d49a1f)', color: '#0a0a0c', fontWeight: 600, border: 'none', padding: '13px 28px', borderRadius: 5, cursor: 'pointer', fontSize: 14, width: '100%', letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(240,180,41,0.22)' },
-  btnAdminSave: { fontFamily: "'Oswald',sans-serif", background: '#1d1d24', color: '#f5f1e8', fontWeight: 600, border: '1px solid rgba(212,175,55,0.3)', padding: '13px 30px', borderRadius: 5, cursor: 'pointer', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(0,0,0,0.4)' },
+  btnPrimary: { fontFamily: "'Oswald',sans-serif", background: 'linear-gradient(135deg,#f4c430,#d49a1f)', color: '#0a0a0c', fontWeight: 600, border: 'none', padding: '13px 28px', borderRadius: 10, cursor: 'pointer', fontSize: 14, width: '100%', letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(240,180,41,0.22)' },
+  btnAdminSave: { fontFamily: "'Oswald',sans-serif", background: '#22222a', color: '#f5f1e8', fontWeight: 600, border: '1px solid rgba(212,175,55,0.3)', padding: '13px 30px', borderRadius: 10, cursor: 'pointer', fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', boxShadow: '0 6px 18px rgba(0,0,0,0.4)' },
 
   pageTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 19, fontWeight: 600, color: '#f5f1e8', marginBottom: 16, letterSpacing: 0.8, textTransform: 'uppercase' },
 
   // ── Info box ──
-  infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.16)', borderRadius: 6, padding: '10px 16px', fontSize: 12.5, color: '#9b9ba3', marginBottom: 16, lineHeight: 1.7 },
+  infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.16)', borderRadius: 12, padding: '10px 16px', fontSize: 12.5, color: '#9b9ba3', marginBottom: 16, lineHeight: 1.7 },
   infoPt: { color: '#9b9ba3' },
   infoPtGold: { color: '#f0b429' },
   infoPtBlue: { color: '#7fb3e0' },
@@ -808,27 +821,27 @@ const S = {
   dayLabelLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)' },
 
   // ── Match card (scoreboard) ──
-  matchCard: { position: 'relative', display: 'flex', background: '#131317', border: '1px solid rgba(245,241,232,0.06)', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
+  matchCard: { position: 'relative', display: 'flex', background: '#1e1e24', border: '1px solid rgba(245,241,232,0.06)', borderRadius: 16, marginBottom: 8, overflow: 'hidden' },
   matchCardBody: { flex: 1, padding: '11px 14px 11px 12px' },
   cardStripeDefault: { width: 4, background: 'rgba(245,241,232,0.07)', flexShrink: 0 },
   cardStripeGold:   { width: 4, background: 'linear-gradient(180deg,#f4c430,#c89a2e)', flexShrink: 0 },
   cardStripeBlue:   { width: 4, background: 'linear-gradient(180deg,#7fb3e0,#3a7ab0)', flexShrink: 0 },
   cardStripeGreen:  { width: 4, background: 'linear-gradient(180deg,#6fcf9c,#2f9e64)', flexShrink: 0 },
   cardStripeLocked: { width: 4, background: 'rgba(224,113,124,0.4)', flexShrink: 0 },
-  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.08), #131317 35%)', borderColor: 'rgba(212,175,55,0.28)' },
-  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.07), #131317 35%)', borderColor: 'rgba(127,179,224,0.22)' },
-  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.07), #131317 35%)', borderColor: 'rgba(111,207,156,0.22)' },
-  cardLocked: { background: '#101013', borderColor: 'rgba(224,113,124,0.14)' },
+  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.08), #1e1e24 35%)', borderColor: 'rgba(212,175,55,0.28)' },
+  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.07), #1e1e24 35%)', borderColor: 'rgba(127,179,224,0.22)' },
+  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.07), #1e1e24 35%)', borderColor: 'rgba(111,207,156,0.22)' },
+  cardLocked: { background: '#1a1a1f', borderColor: 'rgba(224,113,124,0.14)' },
 
   matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7d7d86', letterSpacing: 0.5 },
   matchMetaDot: { color: 'rgba(212,175,55,0.5)' },
   matchGroup: { color: '#5a5a62' },
   teamName: { flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, color: '#f5f1e8' },
 
-  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: '#0a0a0c', padding: '4px 7px', borderRadius: 4, border: '1px solid rgba(212,175,55,0.15)' },
-  scoreInput: { width: 38, height: 36, textAlign: 'center', background: '#0a0a0c', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 3, color: '#f0b429', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: '#0a0a0c', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 3, color: '#f0b429', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: '#0a0a0c', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 3, fontSize: 18, fontWeight: 700, color: '#8a8a93', fontFamily: "'Oswald',monospace" },
+  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: '#15151a', padding: '4px 7px', borderRadius: 10, border: '1px solid rgba(212,175,55,0.15)' },
+  scoreInput: { width: 38, height: 36, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 8, color: '#f0b429', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 8, color: '#f0b429', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 8, fontSize: 18, fontWeight: 700, color: '#8a8a93', fontFamily: "'Oswald',monospace" },
   colon: { fontSize: 16, color: 'rgba(212,175,55,0.5)', flexShrink: 0, fontFamily: "'Oswald',sans-serif" },
 
   resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.05)', fontSize: 12, color: '#7d7d86', display: 'flex', alignItems: 'center', gap: 10 },
@@ -840,15 +853,15 @@ const S = {
   ptsBadgeGreen: { color: '#0a0a0c', background: 'linear-gradient(135deg,#9fe6c0,#52b788)' },
   ptsBadgeZero:  { color: '#cdd0d6', background: 'rgba(245,241,232,0.1)' },
 
-  lockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e0717c', background: 'rgba(224,113,124,0.12)', border: '1px solid rgba(224,113,124,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.8, textTransform: 'uppercase' },
-  timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 3, letterSpacing: 0.5 },
+  lockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e0717c', background: 'rgba(224,113,124,0.12)', border: '1px solid rgba(224,113,124,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
+  timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.5 },
   liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#f0b429', display: 'inline-block' },
 
   emptyMsg: { color: '#7d7d86', fontStyle: 'italic', fontSize: 13.5 },
 
   // ── Podium top 3 (ca în model) ──
   podiumWrap: { display: 'flex', gap: 10, marginBottom: 22 },
-  podiumCard: { flex: 1, background: '#131317', border: '1px solid rgba(245,241,232,0.07)', borderRadius: 10, padding: '18px 10px 14px', textAlign: 'center', position: 'relative' },
+  podiumCard: { flex: 1, background: '#1e1e24', border: '1px solid rgba(245,241,232,0.07)', borderRadius: 18, padding: '18px 10px 14px', textAlign: 'center', position: 'relative' },
   podiumMe: { border: '1px solid rgba(240,180,41,0.55)', boxShadow: '0 0 0 1px rgba(240,180,41,0.25), 0 10px 24px rgba(240,180,41,0.08)' },
   podiumAvatar: { width: 52, height: 52, lineHeight: '52px', borderRadius: '50%', margin: '0 auto 10px', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 16, border: '2px solid rgba(245,241,232,0.1)' },
   avatarGold:   { background: 'linear-gradient(135deg,#f4c430,#c89a2e)', color: '#0a0a0c', borderColor: 'rgba(244,196,48,0.5)' },
@@ -861,20 +874,26 @@ const S = {
   podiumRank: { position: 'absolute', top: 8, left: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 700, color: '#5a5a62' },
 
   // ── Tabel clasament (ca în model: # / Jucător / Exacte / Puncte) ──
-  lbTableWrap: { border: '1px solid rgba(245,241,232,0.07)', borderRadius: 10, overflow: 'hidden', marginBottom: 28 },
-  lbTableHead: { display: 'flex', alignItems: 'center', padding: '11px 16px', background: '#0a0a0c', borderBottom: '1px solid rgba(245,241,232,0.06)' },
+  lbTableWrap: { border: '1px solid rgba(245,241,232,0.07)', borderRadius: 16, overflow: 'hidden', marginBottom: 28 },
+  lbTableHead: { display: 'flex', alignItems: 'center', padding: '11px 16px', background: '#15151a', borderBottom: '1px solid rgba(245,241,232,0.06)' },
   lbColRank: { width: 28, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
   lbColName: { flex: 1, display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
   lbColExact: { width: 64, textAlign: 'center', fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
   lbColPts: { width: 70, textAlign: 'right', fontFamily: "'Oswald',sans-serif", fontSize: 12, fontWeight: 700, color: '#f0b429', letterSpacing: 0.6, textTransform: 'uppercase' },
-  lbTableRow: { display: 'flex', alignItems: 'center', padding: '13px 16px', background: '#131317', borderBottom: '1px solid rgba(245,241,232,0.05)' },
-  lbRowMe: { background: 'linear-gradient(90deg, #f0b429, #e0a526)' },
+  lbValRank: { width: 28, fontFamily: "'Oswald',monospace", fontSize: 14, fontWeight: 700, color: '#f0b429' },
+  lbValName: { flex: 1, display: 'flex', alignItems: 'center', gap: 10 },
+  lbValExact: { width: 64, textAlign: 'center', fontFamily: "'Oswald',monospace", fontSize: 13, fontWeight: 600, color: '#9b9ba3' },
+  lbValPts: { width: 70, textAlign: 'right', fontFamily: "'Oswald',monospace", fontSize: 18, fontWeight: 700, color: '#f0b429' },
+  lbTableRow: { display: 'flex', alignItems: 'center', padding: '13px 16px', background: '#1e1e24', borderBottom: '1px solid rgba(245,241,232,0.05)' },
+  lbRowMe: { background: '#23211a', boxShadow: 'inset 0 0 0 1.5px #f0b429' },
   lbAvatarSm: { width: 28, height: 28, lineHeight: '28px', borderRadius: '50%', textAlign: 'center', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 10.5, flexShrink: 0 },
-  lbYou: { fontFamily: "'Oswald',sans-serif", fontSize: 9, color: '#f0b429', background: 'rgba(10,10,12,0.15)', padding: '1px 6px', borderRadius: 3, marginLeft: 8, letterSpacing: 0.6, textTransform: 'uppercase', verticalAlign: 'middle' },
+  lbYou: { fontFamily: "'Oswald',sans-serif", fontSize: 9, color: '#f0b429', background: 'rgba(10,10,12,0.15)', padding: '1px 6px', borderRadius: 6, marginLeft: 8, letterSpacing: 0.6, textTransform: 'uppercase', verticalAlign: 'middle' },
 
   // ── Tabel detaliat (Pronosticuri) ──
-  table: { width: '100%', borderCollapse: 'collapse', background: '#131317', fontSize: 12 },
-  th: { fontFamily: "'Oswald',sans-serif", background: '#0a0a0c', padding: '9px 10px', textAlign: 'left', color: '#9b9ba3', fontWeight: 500, letterSpacing: 0.6, borderBottom: '1px solid rgba(212,175,55,0.18)', whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 10.5 },
+  table: { width: '100%', borderCollapse: 'collapse', background: '#1e1e24', fontSize: 12 },
+  th: { fontFamily: "'Oswald',sans-serif", background: '#15151a', padding: '9px 10px', textAlign: 'left', color: '#9b9ba3', fontWeight: 500, letterSpacing: 0.6, borderBottom: '1px solid rgba(212,175,55,0.18)', whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 10.5 },
+  thMe: { boxShadow: 'inset 0 2px 0 0 #f0b429, inset 2px 0 0 0 rgba(240,180,41,0.4), inset -2px 0 0 0 rgba(240,180,41,0.4)', color: '#f0b429' },
+  tdMe: { boxShadow: 'inset 2px 0 0 0 rgba(240,180,41,0.4), inset -2px 0 0 0 rgba(240,180,41,0.4)' },
   tr: {},
   td: { padding: '8px 10px', borderBottom: '1px solid rgba(245,241,232,0.04)', verticalAlign: 'middle' },
   tdMatch: { fontWeight: 600, fontSize: 11.5, color: '#f5f1e8' },
@@ -884,7 +903,7 @@ const S = {
   tdPts: { fontSize: 9.5, opacity: 0.85, fontFamily: "'Oswald',sans-serif" },
 
   // ── Admin match card ──
-  adminMatchCard: { background: '#131317', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 6, padding: '9px 13px', marginBottom: 6 },
+  adminMatchCard: { background: '#1e1e24', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 14, padding: '9px 13px', marginBottom: 6 },
 
   // ── Footer ──
   footer: { textAlign: 'center', padding: '20px', fontSize: 12, color: '#5a5a62', borderTop: '1px solid rgba(212,175,55,0.1)' },
