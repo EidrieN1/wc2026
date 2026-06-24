@@ -987,7 +987,7 @@ export default function App() {
                     }} />
 
                     <div style={{ fontFamily: "'Oswald',sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: 3, color: '#9b8a3a', textTransform: 'uppercase', marginBottom: 10 }}>
-                      🏆 &nbsp;Prize Pool
+                      🏆 &nbsp;JACKPOT
                     </div>
 
                     <div style={{
