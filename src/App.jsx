@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ref, onValue, set, get } from 'firebase/database'
+import { ref, onValue, set, get, push } from 'firebase/database'
 import { db } from './firebase'
 import { MATCHES } from './matches'
 
@@ -65,6 +65,9 @@ export default function App() {
   const [adminInput, setAdminInput]   = useState('')
 
   const [users, setUsers]         = useState({})           // { name: { hash } }
+  const [messages, setMessages]   = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [lastSeenTs, setLastSeenTs] = useState(() => Date.now())
   const [predictions, setPreds]   = useState({})           // { name: { matchId: {home,away} } }
   const [results, setResults]     = useState({})           // { matchId: {home,away} }
   const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
@@ -132,7 +135,15 @@ export default function App() {
     const unsubSpecialRes = onValue(ref(db, 'specialResults'), snap => {
       setSpecialResults(snap.val() || {})
     })
-    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes() }
+    const unsubChat = onValue(ref(db, 'chat'), snap => {
+      const val = snap.val() || {}
+      const msgs = Object.entries(val)
+        .map(([id, m]) => ({ id, ...m }))
+        .sort((a, b) => a.ts - b.ts)
+        .slice(-200)
+      setMessages(msgs)
+    })
+    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes(); unsubChat() }
   }, [])
 
   // Sync local predictions when user logs in or remote changes
@@ -433,6 +444,20 @@ export default function App() {
     return !(res && res.home !== '' && res.away !== '')
   })
 
+  // ─── CHAT ────────────────────────────────────────────────────────────────
+  const unread = messages.filter(m => m.ts > lastSeenTs && m.user !== currentUser?.name).length
+
+  const markChatRead = () => setLastSeenTs(Date.now())
+
+  const sendMessage = async () => {
+    const text = chatInput.trim()
+    if (!text || !currentUser) return
+    setChatInput('')
+    try {
+      await push(ref(db, 'chat'), { user: currentUser.name, text, ts: Date.now() })
+    } catch (e) { showToast('Eroare la trimitere', 'err') }
+  }
+
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
   return (
@@ -464,8 +489,16 @@ export default function App() {
         </div>
         {currentUser && (
           <nav style={S.navWrap}>
-            {[['predict','Pronosticuri'],['special','Speciale'],['mypool','Pool-ul meu'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
-              <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }} onClick={() => setView(k)}>{l}</button>
+            {[
+              ['predict','Pronosticuri'],
+              ['special','Speciale'],
+              ['mypool','Pool-ul meu'],
+              ['leaderboard','Clasament'],
+              ['chat', unread > 0 ? `Chat (${unread})` : 'Chat'],
+              ['admin','Admin']
+            ].map(([k,l]) => (
+              <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}), ...(k==='chat' && unread > 0 ? { color: '#f0b429' } : {}) }}
+                onClick={() => { setView(k); if (k === 'chat') markChatRead() }}>{l}</button>
             ))}
           </nav>
         )}
@@ -947,9 +980,9 @@ export default function App() {
 
             <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8, marginTop: 28 }}>Pronosticuri detaliate</h3>
             <div style={S.infoBox}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
-            <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 16, border: '1px solid rgba(212,175,55,0.18)' }}>
+            <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 16, border: '1px solid rgba(212,175,55,0.18)', maxHeight: '60vh', overflowY: 'auto' }}>
               <table style={S.table}>
-                <thead>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
                     <th style={S.th}>Meci</th>
                     {orderedUserNames.map(u => (
@@ -1080,6 +1113,73 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ════ CHAT ════ */}
+        {view === 'chat' && currentUser && (
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', minHeight: 400 }}>
+            <h2 style={S.pageTitle}>Chat</h2>
+
+            {/* Messages */}
+            <div className="wc-scroll" style={S.chatBox}
+              ref={el => { if (el) el.scrollTop = el.scrollHeight }}>
+              {messages.length === 0 && (
+                <div style={{ textAlign: 'center', color: '#46464d', marginTop: 40, fontSize: 13.5 }}>
+                  Niciun mesaj încă. Fii primul! 👋
+                </div>
+              )}
+              {messages.map((msg, i) => {
+                const isMe = msg.user === currentUser.name
+                const showName = i === 0 || messages[i - 1].user !== msg.user
+                const time = msg.ts
+                  ? new Date(msg.ts).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+                  : ''
+                return (
+                  <div key={msg.id} style={{ marginBottom: 4, display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    {showName && (
+                      <div style={{ fontSize: 10.5, color: '#5a5a62', marginBottom: 3, marginLeft: isMe ? 0 : 4, marginRight: isMe ? 4 : 0, fontFamily: "'Oswald',sans-serif", letterSpacing: 0.5 }}>
+                        {isMe ? 'Tu' : msg.user} · {time}
+                      </div>
+                    )}
+                    <div style={{
+                      maxWidth: '76%',
+                      padding: '9px 14px',
+                      borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: isMe
+                        ? 'linear-gradient(135deg,#d4af37,#b8922a)'
+                        : '#26262e',
+                      border: isMe ? 'none' : '1px solid rgba(245,241,232,0.06)',
+                      color: isMe ? '#0a0a0c' : '#f5f1e8',
+                      fontSize: 13.5,
+                      fontWeight: isMe ? 600 : 400,
+                      lineHeight: 1.45,
+                      wordBreak: 'break-word',
+                    }}>
+                      {msg.text}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Input */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
+              <input
+                style={{ ...S.input, marginBottom: 0, flex: 1 }}
+                placeholder="Scrie un mesaj..."
+                value={chatInput}
+                maxLength={500}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              />
+              <button
+                style={{ ...S.btnPrimary, width: 'auto', padding: '11px 22px', flexShrink: 0 }}
+                onClick={sendMessage}
+              >
+                Trimite
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -1241,6 +1341,7 @@ const S = {
   adminMatchCard: { background: '#1e1e24', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 14, padding: '9px 13px', marginBottom: 6 },
 
   // ── Footer ──
+  chatBox: { flex: 1, overflowY: 'auto', background: '#15151a', borderRadius: 14, padding: '14px', marginBottom: 4, display: 'flex', flexDirection: 'column', gap: 2, border: '1px solid rgba(212,175,55,0.14)' },
   footer: { textAlign: 'center', padding: '20px', fontSize: 12, color: '#5a5a62', borderTop: '1px solid rgba(212,175,55,0.1)' },
   footerBall: { marginRight: 4 },
   footerDot: { margin: '0 8px', color: 'rgba(212,175,55,0.3)' },
