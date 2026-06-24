@@ -443,10 +443,11 @@ export default function App() {
         <div style={S.headerInner}>
           <div style={S.logo}>
             <div style={S.logoMark}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L20 5.5V11C20 16 16.5 19.5 12 21C7.5 19.5 4 16 4 11V5.5L12 2Z" fill="none" stroke="#f0b429" strokeWidth="1.4" strokeLinejoin="round"/>
-                <path d="M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11 13.5 11.5 12 12.5V13.5" stroke="#f0b429" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                <circle cx="12" cy="16" r="0.9" fill="#f0b429"/>
+              <svg width="24" height="24" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#f5f1e8"/>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#0a0a0c" strokeWidth="1"/>
+                <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#0a0a0c"/>
+                <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#0a0a0c" strokeWidth="1.1" strokeLinecap="round"/>
               </svg>
             </div>
             <div>
@@ -485,10 +486,11 @@ export default function App() {
           <div style={S.center}>
             <div style={S.card}>
               <div style={S.cardCrest}>
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L20 5.5V11C20 16 16.5 19.5 12 21C7.5 19.5 4 16 4 11V5.5L12 2Z" fill="none" stroke="#f0b429" strokeWidth="1.3" strokeLinejoin="round"/>
-                  <path d="M9 9.5C9 8 10.3 7 12 7C13.7 7 15 8 15 9.5C15 11 13.5 11.5 12 12.5V13.5" stroke="#f0b429" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  <circle cx="12" cy="16" r="0.85" fill="#f0b429"/>
+                <svg width="36" height="36" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="#f5f1e8"/>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="#0a0a0c" strokeWidth="1"/>
+                  <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#0a0a0c"/>
+                  <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#0a0a0c" strokeWidth="1.1" strokeLinecap="round"/>
                 </svg>
               </div>
               <h2 style={S.cardTitle}>Intră în joc</h2>
@@ -983,7 +985,7 @@ export default function App() {
                               fontWeight: pts ? 700 : 400 }}>
                               {(locked || isMe)
                                 ? hasPred ? `${p.home}–${p.away}` : <span style={S.tdDash}>–</span>
-                                : <span style={S.tdDash}>•</span>
+                                : hasPred ? <span style={S.tdLockIcon} title="Pronostic pus, ascuns până la blocare">🔒</span> : <span style={S.tdDash}>–</span>
                               }
                               {pts !== null && (locked || isMe) && (
                                 <div style={S.tdPts}>({pts}p)</div>
@@ -1232,6 +1234,7 @@ const S = {
   tdVs: { color: '#5a5a62', fontWeight: 400 },
   tdMeta: { fontSize: 10, marginTop: 3 },
   tdDash: { color: '#46464d' },
+  tdLockIcon: { fontSize: 11, opacity: 0.75, filter: 'grayscale(0.3)' },
   tdPts: { fontSize: 9.5, opacity: 0.85, fontFamily: "'Oswald',sans-serif" },
 
   // ── Admin match card ──
