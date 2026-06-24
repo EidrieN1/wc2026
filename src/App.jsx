@@ -26,6 +26,19 @@ function isLocked(kickoff) {
   return Date.now() >= new Date(kickoff).getTime() - 5 * 60 * 1000
 }
 
+// Calculează punctajul pentru pronosticul de finaliști: 20p ambele corecte, 10p doar una, 0p niciuna
+function calcFinalistsScore(picked, actual) {
+  if (!picked || !actual) return null
+  if (!picked[0] || !picked[1] || !actual[0] || !actual[1]) return null
+  const pSet = new Set(picked)
+  const aSet = new Set(actual)
+  let matches = 0
+  pSet.forEach(t => { if (aSet.has(t)) matches += 1 })
+  if (matches === 2) return 20
+  if (matches === 1) return 10
+  return 0
+}
+
 function fmtHour(kickoff) {
   if (!kickoff) return ''
   return new Date(kickoff).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
@@ -40,7 +53,7 @@ async function hashPass(pass) {
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── State ──
-  const [view, setView]           = useState('login')      // login | predict | leaderboard | mypool | admin
+  const [view, setView]           = useState('login')      // login | predict | special | leaderboard | mypool | admin
   const [loginStep, setLoginStep] = useState('name')       // name | password | register
   const [inputName, setInputName] = useState('')
   const [inputPass, setInputPass] = useState('')
@@ -54,9 +67,14 @@ export default function App() {
   const [users, setUsers]         = useState({})           // { name: { hash } }
   const [predictions, setPreds]   = useState({})           // { name: { matchId: {home,away} } }
   const [results, setResults]     = useState({})           // { matchId: {home,away} }
+  const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
+  const [specialResults, setSpecialResults] = useState({}) // { finalists: [a,b] }
 
   const [localPreds, setLocalPreds] = useState({})         // buffer local înainte de save
   const [localResults, setLocalResults] = useState({})
+  const [localSpecial, setLocalSpecial] = useState({ finalists: ['', ''], finalScore: { home: '', away: '' }, champion: '' })
+  const [localSpecialResults, setLocalSpecialResults] = useState({ finalists: ['', ''], champion: '' })
+  const [savingSpecial, setSavingSpecial] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [toast, setToast]         = useState(null)
   const [now, setNow]             = useState(Date.now())
@@ -108,7 +126,13 @@ export default function App() {
     const unsubRes = onValue(ref(db, 'results'), snap => {
       setResults(snap.val() || {})
     })
-    return () => { unsubUsers(); unsubPreds(); unsubRes() }
+    const unsubSpecialPreds = onValue(ref(db, 'specialPredictions'), snap => {
+      setSpecialPreds(snap.val() || {})
+    })
+    const unsubSpecialRes = onValue(ref(db, 'specialResults'), snap => {
+      setSpecialResults(snap.val() || {})
+    })
+    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes() }
   }, [])
 
   // Sync local predictions when user logs in or remote changes
@@ -121,6 +145,22 @@ export default function App() {
   useEffect(() => {
     setLocalResults(results)
   }, [results])
+
+  // Sync local special predictions/results when user logs in or remote changes
+  useEffect(() => {
+    if (currentUser) {
+      const mine = specialPreds[currentUser.name]
+      setLocalSpecial({
+        finalists: mine?.finalists || ['', ''],
+        finalScore: mine?.finalScore || { home: '', away: '' },
+        champion: mine?.champion || ''
+      })
+    }
+  }, [specialPreds, currentUser])
+
+  useEffect(() => {
+    setLocalSpecialResults({ finalists: specialResults.finalists || ['', ''], champion: specialResults.champion || '' })
+  }, [specialResults])
 
   // ── Restore session ──
   useEffect(() => {
@@ -220,6 +260,40 @@ export default function App() {
     setSaving(false)
   }
 
+  // ─── PRONOSTICURI SPECIALE (Finaliști + Scor finală) ────────────────────
+
+  const updateLocalFinalist = (slot, teamName) => {
+    setLocalSpecial(prev => {
+      const next = [...prev.finalists]
+      next[slot] = teamName
+      return { ...prev, finalists: next }
+    })
+  }
+
+  const updateLocalFinalScore = (side, val) => {
+    if (val !== '' && (isNaN(parseInt(val)) || parseInt(val) < 0)) return
+    setLocalSpecial(prev => ({
+      ...prev,
+      finalScore: { ...prev.finalScore, [side]: val }
+    }))
+  }
+
+  const updateLocalChampion = (teamName) => {
+    setLocalSpecial(prev => ({ ...prev, champion: teamName }))
+  }
+
+  const saveSpecialPrediction = async () => {
+    if (!currentUser) return
+    setSavingSpecial(true)
+    try {
+      await set(ref(db, `specialPredictions/${currentUser.name}`), localSpecial)
+      showToast('Pronostic special salvat! ✅')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+    setSavingSpecial(false)
+  }
+
   // ─── ADMIN ───────────────────────────────────────────────────────────────
 
   const handleAdminLogin = () => {
@@ -248,6 +322,27 @@ export default function App() {
     }
   }
 
+  const updateLocalSpecialResultFinalist = (slot, teamName) => {
+    setLocalSpecialResults(prev => {
+      const next = [...prev.finalists]
+      next[slot] = teamName
+      return { ...prev, finalists: next }
+    })
+  }
+
+  const updateLocalSpecialResultChampion = (teamName) => {
+    setLocalSpecialResults(prev => ({ ...prev, champion: teamName }))
+  }
+
+  const saveSpecialResults = async () => {
+    try {
+      await set(ref(db, 'specialResults'), localSpecialResults)
+      showToast('Finaliști salvați! ✅')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+  }
+
   // ─── CLASAMENT ───────────────────────────────────────────────────────────
 
   const leaderboard = Object.keys(users).map(name => {
@@ -262,8 +357,34 @@ export default function App() {
       if (pts) total += pts
       if (pts === 5) exact += 1
     })
-    return { name, total, exact }
+
+    let specialPts = 0
+    const mySpecial = specialPreds[name]
+    if (mySpecial?.finalists && specialResults.finalists) {
+      const fPts = calcFinalistsScore(mySpecial.finalists, specialResults.finalists)
+      if (fPts) specialPts += fPts
+    }
+    const finalRes = results[63]
+    if (mySpecial?.finalScore && finalRes && finalRes.home !== '' && finalRes.away !== '') {
+      const sh = parseInt(mySpecial.finalScore.home), sa = parseInt(mySpecial.finalScore.away)
+      const rh = parseInt(finalRes.home), ra = parseInt(finalRes.away)
+      if (!isNaN(sh) && !isNaN(sa) && sh === rh && sa === ra) specialPts += 10
+    }
+    if (mySpecial?.champion && specialResults.champion && mySpecial.champion === specialResults.champion) {
+      specialPts += 10
+    }
+    total += specialPts
+
+    return { name, total, exact, specialPts }
   }).sort((a, b) => b.total - a.total)
+
+  // Ordinea coloanelor din tabelul „Pronosticuri detaliate”: userul curent primul, apoi restul după punctaj descrescător
+  const orderedUserNames = currentUser
+    ? [
+        currentUser.name,
+        ...leaderboard.filter(u => u.name !== currentUser.name).map(u => u.name)
+      ]
+    : leaderboard.map(u => u.name)
 
   // ─── MECIURI SORTATE ─────────────────────────────────────────────────────
 
@@ -274,6 +395,24 @@ export default function App() {
     acc[m.date].push(m)
     return acc
   }, {})
+
+  // Doar meciurile din faza grupelor — fazele eliminatorii se reintroduc manual ulterior, când se cunosc echipele
+  const groupMatches = sortedMatches.filter(m => m.group.startsWith('Grupa'))
+
+  const groupMatchesByDay = groupMatches.reduce((acc, m) => {
+    if (!acc[m.date]) acc[m.date] = []
+    acc[m.date].push(m)
+    return acc
+  }, {})
+
+  // Toate echipele participante (extrase din meciurile de grupă), sortate alfabetic
+  const allTeams = Array.from(
+    new Set(groupMatches.flatMap(m => [m.home, m.away]))
+  ).sort((a, b) => a.localeCompare(b, 'ro'))
+
+  const specialLocked = isLocked(MATCHES.find(m => m.id === 31)?.kickoff)
+  const myFinalists = localSpecial.finalists
+  const myFinalScore = localSpecial.finalScore
 
   // ─── POOL-UL MEU ─────────────────────────────────────────────────────────
 
@@ -312,7 +451,7 @@ export default function App() {
             </div>
             <div>
               <div style={S.logoTitle}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
-              <div style={S.logoSub}>Pariorii de la AERO PART EXPERT</div>
+              <div style={S.logoSub}>Pariorii AERO PART EXPERT</div>
             </div>
           </div>
           {currentUser && (
@@ -324,7 +463,7 @@ export default function App() {
         </div>
         {currentUser && (
           <nav style={S.navWrap}>
-            {[['predict','Pronosticuri'],['mypool','Pool-ul meu'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
+            {[['predict','Pronosticuri'],['special','Speciale'],['mypool','Pool-ul meu'],['leaderboard','Clasament'],['admin','Admin']].map(([k,l]) => (
               <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }} onClick={() => setView(k)}>{l}</button>
             ))}
           </nav>
@@ -427,7 +566,7 @@ export default function App() {
               <div style={{ marginTop: 6, opacity: 0.8 }}>Pronosticurile se blochează automat cu 5 minute înainte de fiecare meci.</div>
             </div>
 
-            {Object.entries(matchesByDay).map(([day, dayMatches]) => (
+            {Object.entries(groupMatchesByDay).map(([day, dayMatches]) => (
               <div key={day} style={{ marginBottom: 26 }}>
                 <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
                 {dayMatches.map(m => {
@@ -508,6 +647,152 @@ export default function App() {
           </div>
         )}
 
+        {/* ════ SPECIALE ════ */}
+        {view === 'special' && currentUser && (
+          <div>
+            <h2 style={S.pageTitle}>Pronosticuri speciale</h2>
+            <div style={S.infoBox}>
+              <span style={S.infoPt}><b style={S.infoPtGold}>20p</b> ambii finaliști corecți</span>
+              <span style={S.infoDot}>·</span>
+              <span style={S.infoPt}><b style={S.infoPtBlue}>10p</b> un finalist corect</span>
+              <span style={S.infoDot}>·</span>
+              <span style={S.infoPt}><b style={S.infoPtGreen}>10p</b> scor exact finală</span>
+              <span style={S.infoDot}>·</span>
+              <span style={S.infoPt}><b style={S.infoPtGold}>10p</b> campioana corectă</span>
+              <div style={{ marginTop: 6, opacity: 0.8 }}>
+                Se blochează la începutul ultimului meci din faza grupelor (28 Iun, 22:00).
+              </div>
+            </div>
+
+            <div style={S.dayLabel}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
+            <div style={S.matchCard}>
+              <div style={S.cardStripeGold} />
+              <div style={S.matchCardBody}>
+                {specialLocked ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                      <span style={S.matchMeta}>Pronosticul tău</span>
+                      <span style={S.lockBadge}>Blocat</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={S.scoreDisplay2}>{myFinalists[0] || '–'}</div>
+                      <div style={S.scoreDisplay2}>{myFinalists[1] || '–'}</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={S.matchMeta}>Alege 2 echipe (fără ordine)</div>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 9, flexWrap: 'wrap' }}>
+                      <select style={S.selectInput} value={myFinalists[0] || ''} onChange={e => updateLocalFinalist(0, e.target.value)}>
+                        <option value="">Echipa 1...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[1]}>{t}</option>)}
+                      </select>
+                      <select style={S.selectInput} value={myFinalists[1] || ''} onChange={e => updateLocalFinalist(1, e.target.value)}>
+                        <option value="">Echipa 2...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[0]}>{t}</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
+                {specialResults.finalists?.[0] && specialResults.finalists?.[1] && (
+                  <div style={S.resultRow}>
+                    Finaliști reali <b style={S.resultScore}>{specialResults.finalists[0]} – {specialResults.finalists[1]}</b>
+                    {(() => {
+                      const fPts = calcFinalistsScore(myFinalists, specialResults.finalists)
+                      return fPts !== null && (
+                        <span style={{ ...S.ptsBadge, ...(fPts===20?S.ptsBadgeGold:fPts===10?S.ptsBadgeBlue:S.ptsBadgeZero) }}>+{fPts}p</span>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Scorul exact al finalei<span style={S.dayLabelLine} /></div>
+            <div style={S.matchCard}>
+              <div style={S.cardStripeGreen} />
+              <div style={S.matchCardBody}>
+                <div style={S.matchMeta}>Indiferent ce echipe joacă</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
+                  <div style={S.scoreboardWrap}>
+                    {specialLocked ? (
+                      <>
+                        <div style={S.scoreDisplay}>{myFinalScore.home !== '' ? myFinalScore.home : '–'}</div>
+                        <span style={S.colon}>:</span>
+                        <div style={S.scoreDisplay}>{myFinalScore.away !== '' ? myFinalScore.away : '–'}</div>
+                      </>
+                    ) : (
+                      <>
+                        <input style={S.scoreInput} type="number" min="0" max="20"
+                          value={myFinalScore.home} placeholder="–"
+                          onChange={e => updateLocalFinalScore('home', e.target.value)} />
+                        <span style={S.colon}>:</span>
+                        <input style={S.scoreInput} type="number" min="0" max="20"
+                          value={myFinalScore.away} placeholder="–"
+                          onChange={e => updateLocalFinalScore('away', e.target.value)} />
+                      </>
+                    )}
+                  </div>
+                </div>
+                {(() => {
+                  const finalRes = results[63]
+                  const hasFinalRes = finalRes && finalRes.home !== '' && finalRes.away !== ''
+                  if (!hasFinalRes) return null
+                  const sh = parseInt(myFinalScore.home), sa = parseInt(myFinalScore.away)
+                  const rh = parseInt(finalRes.home), ra = parseInt(finalRes.away)
+                  const exact = !isNaN(sh) && !isNaN(sa) && sh === rh && sa === ra
+                  return (
+                    <div style={S.resultRow}>
+                      Rezultat final <b style={S.resultScore}>{finalRes.home} – {finalRes.away}</b>
+                      <span style={{ ...S.ptsBadge, ...(exact ? S.ptsBadgeGold : S.ptsBadgeZero) }}>+{exact ? 10 : 0}p</span>
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+
+            <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Campioana<span style={S.dayLabelLine} /></div>
+            <div style={S.matchCard}>
+              <div style={S.cardStripeBlue} />
+              <div style={S.matchCardBody}>
+                {specialLocked ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                      <span style={S.matchMeta}>Pronosticul tău</span>
+                      <span style={S.lockBadge}>Blocat</span>
+                    </div>
+                    <div style={S.scoreDisplay2}>{localSpecial.champion || '–'}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={S.matchMeta}>Cine câștigă Cupa Mondială</div>
+                    <select style={{ ...S.selectInput, width: '100%', marginTop: 9 }} value={localSpecial.champion || ''} onChange={e => updateLocalChampion(e.target.value)}>
+                      <option value="">Echipa campioană...</option>
+                      {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </>
+                )}
+                {specialResults.champion && (
+                  <div style={S.resultRow}>
+                    Campioana reală <b style={S.resultScore}>{specialResults.champion}</b>
+                    <span style={{ ...S.ptsBadge, ...(localSpecial.champion === specialResults.champion ? S.ptsBadgeGold : S.ptsBadgeZero) }}>
+                      +{localSpecial.champion === specialResults.champion ? 10 : 0}p
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {!specialLocked && (
+              <div style={{ textAlign: 'center', marginTop: 18, marginBottom: 32 }}>
+                <button style={S.btnPrimary} onClick={saveSpecialPrediction} disabled={savingSpecial}>
+                  {savingSpecial ? 'Se salvează...' : 'Salvează pronosticurile speciale'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ════ POOL-UL MEU ════ */}
         {view === 'mypool' && currentUser && (
           <div>
@@ -557,30 +842,52 @@ export default function App() {
             <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Următoare<span style={S.dayLabelLine} /></div>
             {myUpcomingMatches.length === 0
               ? <p style={S.emptyMsg}>Niciun pronostic activ pentru meciurile viitoare.</p>
-              : myUpcomingMatches.map(m => {
-                  const pred = predictions[currentUser.name][m.id]
-                  const locked = isLocked(m.kickoff)
-                  return (
-                    <div key={m.id} style={{ ...S.matchCard, ...(locked ? S.cardLocked : {}) }}>
-                      <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
-                      <div style={S.matchCardBody}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                          <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
-                          {locked && <span style={S.lockBadge}>Blocat</span>}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={S.teamName}>{m.home}</span>
-                          <div style={S.scoreboardWrap}>
-                            <div style={S.scoreDisplay}>{pred.home}</div>
-                            <span style={S.colon}>:</span>
-                            <div style={S.scoreDisplay}>{pred.away}</div>
+              : (
+                <>
+                  {myUpcomingMatches.map(m => {
+                    const pred = localPreds[m.id] || { home: '', away: '' }
+                    const locked = isLocked(m.kickoff)
+                    return (
+                      <div key={m.id} style={{ ...S.matchCard, ...(locked ? S.cardLocked : {}) }}>
+                        <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
+                        <div style={S.matchCardBody}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                            <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                            {locked && <span style={S.lockBadge}>Blocat</span>}
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={S.teamName}>{m.home}</span>
+                            <div style={S.scoreboardWrap}>
+                              {locked
+                                ? <>
+                                    <div style={S.scoreDisplay}>{pred.home !== '' ? pred.home : '–'}</div>
+                                    <span style={S.colon}>:</span>
+                                    <div style={S.scoreDisplay}>{pred.away !== '' ? pred.away : '–'}</div>
+                                  </>
+                                : <>
+                                    <input style={S.scoreInput} type="number" min="0" max="20"
+                                      value={pred.home} placeholder="–"
+                                      onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
+                                    <span style={S.colon}>:</span>
+                                    <input style={S.scoreInput} type="number" min="0" max="20"
+                                      value={pred.away} placeholder="–"
+                                      onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
+                                  </>
+                              }
+                            </div>
+                            <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
+                    )
+                  })}
+                  <div style={{ textAlign: 'center', marginTop: 14, marginBottom: 8 }}>
+                    <button style={S.btnPrimary} onClick={savePredictions} disabled={saving}>
+                      {saving ? 'Se salvează...' : 'Salvează modificările'}
+                    </button>
+                  </div>
+                </>
+              )
             }
           </div>
         )}
@@ -643,7 +950,7 @@ export default function App() {
                 <thead>
                   <tr>
                     <th style={S.th}>Meci</th>
-                    {Object.keys(users).map(u => (
+                    {orderedUserNames.map(u => (
                       <th key={u} style={{ ...S.th, textAlign: 'center', ...(u===currentUser?.name ? S.thMe : {}) }}>
                         {u}
                       </th>
@@ -664,7 +971,7 @@ export default function App() {
                             {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
                         </td>
-                        {Object.keys(users).map(u => {
+                        {orderedUserNames.map(u => {
                           const p = predictions[u]?.[m.id]
                           const hasPred = p && p.home !== '' && p.away !== ''
                           const pts = hasPred && hasRes ? calcScore(p, res) : null
@@ -711,7 +1018,30 @@ export default function App() {
               </div>
             ) : (
               <div>
-                <div style={S.infoBox}>Introdu scorurile finale. Punctajele se calculează automat.</div>
+                <div style={S.dayLabel}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
+                <div style={S.adminMatchCard}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <select style={S.selectInput} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
+                      <option value="">Finalista 1...</option>
+                      {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[1]}>{t}</option>)}
+                    </select>
+                    <select style={S.selectInput} value={localSpecialResults.finalists[1] || ''} onChange={e => updateLocalSpecialResultFinalist(1, e.target.value)}>
+                      <option value="">Finalista 2...</option>
+                      {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[0]}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <select style={{ ...S.selectInput, width: '100%' }} value={localSpecialResults.champion || ''} onChange={e => updateLocalSpecialResultChampion(e.target.value)}>
+                      <option value="">Campioana...</option>
+                      {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: 14 }}>
+                    <button style={S.btnAdminSave} onClick={saveSpecialResults}>Salvează finaliștii și campioana</button>
+                  </div>
+                </div>
+
+                <div style={{ ...S.infoBox, marginTop: 22 }}>Introdu scorurile finale. Punctajele se calculează automat.</div>
                 {Object.entries(matchesByDay).map(([day, dayMatches]) => (
                   <div key={day} style={{ marginBottom: 22 }}>
                     <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
@@ -842,6 +1172,8 @@ const S = {
   scoreInput: { width: 38, height: 36, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 8, color: '#f0b429', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
   scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 8, color: '#f0b429', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
   scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 8, fontSize: 18, fontWeight: 700, color: '#8a8a93', fontFamily: "'Oswald',monospace" },
+  scoreDisplay2: { flex: 1, padding: '10px 14px', textAlign: 'center', background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 8, fontSize: 13.5, fontWeight: 600, color: '#cdd0d6' },
+  selectInput: { flex: 1, minWidth: 150, padding: '11px 12px', borderRadius: 8, border: '1px solid rgba(212,175,55,0.3)', background: '#15151a', color: '#f5f1e8', fontSize: 13.5, outline: 'none', fontFamily: "'Inter',sans-serif" },
   colon: { fontSize: 16, color: 'rgba(212,175,55,0.5)', flexShrink: 0, fontFamily: "'Oswald',sans-serif" },
 
   resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.05)', fontSize: 12, color: '#7d7d86', display: 'flex', alignItems: 'center', gap: 10 },
