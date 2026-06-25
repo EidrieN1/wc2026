@@ -697,8 +697,8 @@ export default function App() {
                       <div style={stripeStyle} />
                       <div style={S.matchCardBody}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                          <span style={S.matchMeta}>
-                            {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span>
+                          <span style={{ ...S.matchMeta, color: T.textMeta }}>
+                            {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span>
                           </span>
                           {locked
                             ? <span style={S.lockBadge}>Blocat</span>
@@ -708,30 +708,30 @@ export default function App() {
                           }
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={S.teamName}>{m.home}</span>
-                          <div style={S.scoreboardWrap}>
+                          <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                          <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                             {locked
                               ? <>
-                                  <div style={S.scoreDisplay}>{pred.home !== '' ? pred.home : '–'}</div>
+                                  <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home !== '' ? pred.home : '–'}</div>
                                   <span style={S.colon}>:</span>
-                                  <div style={S.scoreDisplay}>{pred.away !== '' ? pred.away : '–'}</div>
+                                  <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away !== '' ? pred.away : '–'}</div>
                                 </>
                               : <>
-                                  <input style={S.scoreInput} type="number" min="0" max="20"
+                                  <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                                     value={pred.home} placeholder="–"
                                     onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
                                   <span style={S.colon}>:</span>
-                                  <input style={S.scoreInput} type="number" min="0" max="20"
+                                  <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                                     value={pred.away} placeholder="–"
                                     onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
                                 </>
                             }
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
                         </div>
                         {hasRes && (
-                          <div style={S.resultRow}>
-                            Rezultat final <b style={S.resultScore}>{res.home} – {res.away}</b>
+                          <div style={{ ...S.resultRow, ...T.resultRow }}>
+                            Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
                             {pts !== null && (
                               <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
                                 +{pts}p
@@ -778,23 +778,23 @@ export default function App() {
                 {specialLocked ? (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                      <span style={S.matchMeta}>Pronosticul tău</span>
+                      <span style={{ ...S.matchMeta, color: T.textMeta }}>Pronosticul tău</span>
                       <span style={S.lockBadge}>Blocat</span>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={S.scoreDisplay2}>{myFinalists[0] || '–'}</div>
-                      <div style={S.scoreDisplay2}>{myFinalists[1] || '–'}</div>
+                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{myFinalists[0] || '–'}</div>
+                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{myFinalists[1] || '–'}</div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div style={S.matchMeta}>Alege 2 echipe (fără ordine)</div>
+                    <div style={{ ...S.matchMeta, color: T.textMeta }}>Alege 2 echipe (fără ordine)</div>
                     <div style={{ display: 'flex', gap: 10, marginTop: 9, flexWrap: 'wrap' }}>
-                      <select style={S.selectInput} value={myFinalists[0] || ''} onChange={e => updateLocalFinalist(0, e.target.value)}>
+                      <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[0] || ''} onChange={e => updateLocalFinalist(0, e.target.value)}>
                         <option value="">Echipa 1...</option>
                         {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[1]}>{t}</option>)}
                       </select>
-                      <select style={S.selectInput} value={myFinalists[1] || ''} onChange={e => updateLocalFinalist(1, e.target.value)}>
+                      <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[1] || ''} onChange={e => updateLocalFinalist(1, e.target.value)}>
                         <option value="">Echipa 2...</option>
                         {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[0]}>{t}</option>)}
                       </select>
@@ -802,8 +802,8 @@ export default function App() {
                   </>
                 )}
                 {specialResults.finalists?.[0] && specialResults.finalists?.[1] && (
-                  <div style={S.resultRow}>
-                    Finaliști reali <b style={S.resultScore}>{specialResults.finalists[0]} – {specialResults.finalists[1]}</b>
+                  <div style={{ ...S.resultRow, ...T.resultRow }}>
+                    Finaliști reali <b style={{ ...S.resultScore, color: T.textResult }}>{specialResults.finalists[0]} – {specialResults.finalists[1]}</b>
                     {(() => {
                       const fPts = calcFinalistsScore(myFinalists, specialResults.finalists)
                       return fPts !== null && (
@@ -819,22 +819,22 @@ export default function App() {
             <div style={{ ...S.matchCard, ...T.matchCard }}>
               <div style={S.cardStripeGreen} />
               <div style={S.matchCardBody}>
-                <div style={S.matchMeta}>Indiferent ce echipe joacă</div>
+                <div style={{ ...S.matchMeta, color: T.textMeta }}>Indiferent ce echipe joacă</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
-                  <div style={S.scoreboardWrap}>
+                  <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                     {specialLocked ? (
                       <>
-                        <div style={S.scoreDisplay}>{myFinalScore.home !== '' ? myFinalScore.home : '–'}</div>
+                        <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{myFinalScore.home !== '' ? myFinalScore.home : '–'}</div>
                         <span style={S.colon}>:</span>
-                        <div style={S.scoreDisplay}>{myFinalScore.away !== '' ? myFinalScore.away : '–'}</div>
+                        <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{myFinalScore.away !== '' ? myFinalScore.away : '–'}</div>
                       </>
                     ) : (
                       <>
-                        <input style={S.scoreInput} type="number" min="0" max="20"
+                        <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                           value={myFinalScore.home} placeholder="–"
                           onChange={e => updateLocalFinalScore('home', e.target.value)} />
                         <span style={S.colon}>:</span>
-                        <input style={S.scoreInput} type="number" min="0" max="20"
+                        <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                           value={myFinalScore.away} placeholder="–"
                           onChange={e => updateLocalFinalScore('away', e.target.value)} />
                       </>
@@ -849,8 +849,8 @@ export default function App() {
                   const rh = parseInt(finalRes.home), ra = parseInt(finalRes.away)
                   const exact = !isNaN(sh) && !isNaN(sa) && sh === rh && sa === ra
                   return (
-                    <div style={S.resultRow}>
-                      Rezultat final <b style={S.resultScore}>{finalRes.home} – {finalRes.away}</b>
+                    <div style={{ ...S.resultRow, ...T.resultRow }}>
+                      Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{finalRes.home} – {finalRes.away}</b>
                       <span style={{ ...S.ptsBadge, ...(exact ? S.ptsBadgeGold : S.ptsBadgeZero) }}>+{exact ? 10 : 0}p</span>
                     </div>
                   )
@@ -865,14 +865,14 @@ export default function App() {
                 {specialLocked ? (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                      <span style={S.matchMeta}>Pronosticul tău</span>
+                      <span style={{ ...S.matchMeta, color: T.textMeta }}>Pronosticul tău</span>
                       <span style={S.lockBadge}>Blocat</span>
                     </div>
-                    <div style={S.scoreDisplay2}>{localSpecial.champion || '–'}</div>
+                    <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{localSpecial.champion || '–'}</div>
                   </>
                 ) : (
                   <>
-                    <div style={S.matchMeta}>Cine câștigă Cupa Mondială</div>
+                    <div style={{ ...S.matchMeta, color: T.textMeta }}>Cine câștigă Cupa Mondială</div>
                     <select style={{ ...S.selectInput, width: '100%', marginTop: 9 }} value={localSpecial.champion || ''} onChange={e => updateLocalChampion(e.target.value)}>
                       <option value="">Echipa campioană...</option>
                       {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
@@ -880,8 +880,8 @@ export default function App() {
                   </>
                 )}
                 {specialResults.champion && (
-                  <div style={S.resultRow}>
-                    Campioana reală <b style={S.resultScore}>{specialResults.champion}</b>
+                  <div style={{ ...S.resultRow, ...T.resultRow }}>
+                    Campioana reală <b style={{ ...S.resultScore, color: T.textResult }}>{specialResults.champion}</b>
                     <span style={{ ...S.ptsBadge, ...(localSpecial.champion === specialResults.champion ? S.ptsBadgeGold : S.ptsBadgeZero) }}>
                       +{localSpecial.champion === specialResults.champion ? 10 : 0}p
                     </span>
@@ -923,19 +923,19 @@ export default function App() {
                       <div style={stripeStyle} />
                       <div style={S.matchCardBody}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                          <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                          <span style={{ ...S.matchMeta, color: T.textMeta }}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={S.teamName}>{m.home}</span>
-                          <div style={S.scoreboardWrap}>
-                            <div style={S.scoreDisplay}>{pred.home}</div>
+                          <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                          <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
+                            <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home}</div>
                             <span style={S.colon}>:</span>
-                            <div style={S.scoreDisplay}>{pred.away}</div>
+                            <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away}</div>
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
                         </div>
-                        <div style={S.resultRow}>
-                          Rezultat final <b style={S.resultScore}>{res.home} – {res.away}</b>
+                        <div style={{ ...S.resultRow, ...T.resultRow }}>
+                          Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
                           <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
                             +{pts}p
                           </span>
@@ -948,7 +948,7 @@ export default function App() {
 
             <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Următoare<span style={S.dayLabelLine} /></div>
             {myUpcomingMatches.length === 0
-              ? <p style={S.emptyMsg}>Niciun pronostic activ pentru meciurile viitoare.</p>
+              ? <p style={{ ...S.emptyMsg, color: T.textMeta }}>Niciun pronostic activ pentru meciurile viitoare.</p>
               : (
                 <>
                   {myUpcomingMatches.map(m => {
@@ -959,30 +959,30 @@ export default function App() {
                         <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
                         <div style={S.matchCardBody}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                            <span style={S.matchMeta}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                            <span style={{ ...S.matchMeta, color: T.textMeta }}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
                             {locked && <span style={S.lockBadge}>Blocat</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={S.teamName}>{m.home}</span>
-                            <div style={S.scoreboardWrap}>
+                            <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                            <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                               {locked
                                 ? <>
-                                    <div style={S.scoreDisplay}>{pred.home !== '' ? pred.home : '–'}</div>
+                                    <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home !== '' ? pred.home : '–'}</div>
                                     <span style={S.colon}>:</span>
-                                    <div style={S.scoreDisplay}>{pred.away !== '' ? pred.away : '–'}</div>
+                                    <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away !== '' ? pred.away : '–'}</div>
                                   </>
                                 : <>
-                                    <input style={S.scoreInput} type="number" min="0" max="20"
+                                    <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                                       value={pred.home} placeholder="–"
                                       onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
                                     <span style={S.colon}>:</span>
-                                    <input style={S.scoreInput} type="number" min="0" max="20"
+                                    <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
                                       value={pred.away} placeholder="–"
                                       onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
                                   </>
                               }
                             </div>
-                            <span style={{ ...S.teamName, textAlign: 'right' }}>{m.away}</span>
+                            <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
                           </div>
                         </div>
                       </div>
@@ -1005,7 +1005,7 @@ export default function App() {
             <h2 style={{ ...S.pageTitle, color: T.text }}>Clasament</h2>
 
             {leaderboard.length === 0
-              ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
+              ? <p style={{ ...S.emptyMsg, color: T.textMeta }}>Niciun jucător înregistrat.</p>
               : (
                 <>
                   {/* ── Jackpot Banner ── */}
@@ -1068,7 +1068,7 @@ export default function App() {
                         <div style={{ ...S.podiumAvatar, ...(i===0?S.avatarGold:i===1?S.avatarSilver:S.avatarBronze) }}>
                           {u.name.slice(0,2).toUpperCase()}
                         </div>
-                        <div style={S.podiumName}>{u.name}{u.name===currentUser?.name?' (tu)':''}</div>
+                        <div style={{ ...S.podiumName, color: T.podiumName }}>{u.name}{u.name===currentUser?.name?' (tu)':''}</div>
                         <div style={S.podiumScore}>{u.total}<small style={S.podiumScoreUnit}>p</small></div>
                         <div style={S.podiumRank}>{i+1}</div>
                       </div>
@@ -1077,7 +1077,7 @@ export default function App() {
 
                   {/* ── Tabel clasament complet ── */}
                   <div style={S.lbTableWrap}>
-                    <div style={S.lbTableHead}>
+                    <div style={{ ...S.lbTableHead, ...T.lbTableHead }}>
                       <span style={S.lbColRank}>#</span>
                       <span style={S.lbColName}>Jucător</span>
                       <span style={S.lbColExact}>Exacte</span>
@@ -1181,11 +1181,11 @@ export default function App() {
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <select style={S.selectInput} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
+                    <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
                       <option value="">Finalista 1...</option>
                       {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[1]}>{t}</option>)}
                     </select>
-                    <select style={S.selectInput} value={localSpecialResults.finalists[1] || ''} onChange={e => updateLocalSpecialResultFinalist(1, e.target.value)}>
+                    <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[1] || ''} onChange={e => updateLocalSpecialResultFinalist(1, e.target.value)}>
                       <option value="">Finalista 2...</option>
                       {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[0]}>{t}</option>)}
                     </select>
@@ -1210,17 +1210,17 @@ export default function App() {
                       return (
                         <div key={m.id} style={S.adminMatchCard}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
-                            <span style={S.matchMeta}>{fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={S.matchGroup}>{m.group}</span></span>
+                            <span style={{ ...S.matchMeta, color: T.textMeta }}>{fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
                             {isLocked(m.kickoff) && <span style={S.lockBadge}>Blocat</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ ...S.teamName, fontSize: 12 }}>{m.home}</span>
-                            <div style={S.scoreboardWrap}>
-                              <input style={S.scoreInputAdmin}
+                            <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
+                              <input style={{ ...S.scoreInputAdmin, ...T.scoreInput }}
                                 type="number" min="0" max="20" value={res.home} placeholder="–"
                                 onChange={e => updateLocalResult(m.id, 'home', e.target.value)} />
                               <span style={S.colon}>:</span>
-                              <input style={S.scoreInputAdmin}
+                              <input style={{ ...S.scoreInputAdmin, ...T.scoreInput }}
                                 type="number" min="0" max="20" value={res.away} placeholder="–"
                                 onChange={e => updateLocalResult(m.id, 'away', e.target.value)} />
                             </div>
@@ -1398,6 +1398,20 @@ const DARK = {
   dayLabel:   { color: '#f0b429' },
   footer:     { borderTop: '1px solid rgba(212,175,55,0.1)', color: '#5a5a62' },
   adminCard:  { background: '#1a1a1f', border: '1px solid rgba(245,241,232,0.07)' },
+  teamName:   '#f5f1e8',
+  textCard:   '#f5f1e8',
+  textMeta:   '#7d7d86',
+  textGroup:  '#5a5a62',
+  textResult: '#f5f1e8',
+  scoreBoard: { background: '#15151a', border: '1px solid rgba(212,175,55,0.15)' },
+  scoreBox:   { background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', color: '#8a8a93' },
+  scoreInput: { background: '#15151a', border: '1px solid rgba(212,175,55,0.3)', color: '#f0b429' },
+  resultRow:  { borderTop: '1px solid rgba(245,241,232,0.05)', color: '#7d7d86' },
+  podiumCard: { background: '#1e1e24', border: '1px solid rgba(245,241,232,0.07)' },
+  podiumName: '#f5f1e8',
+  lbTableHead:{ background: '#15151a', borderBottom: '1px solid rgba(245,241,232,0.06)' },
+  lbTableRow: { borderBottom: '1px solid rgba(245,241,232,0.05)' },
+  lbRowName:  '#f5f1e8',
 }
 
 const LIGHT = {
@@ -1420,6 +1434,20 @@ const LIGHT = {
   dayLabel:   { color: '#b8922a' },
   footer:     { borderTop: '1px solid #e8dcc8', color: '#a08a5a' },
   adminCard:  { background: '#faf5ec', border: '1px solid #ece3d0' },
+  teamName:   '#1a1208',
+  textCard:   '#1a1208',
+  textMeta:   '#9a8a6a',
+  textGroup:  '#b09060',
+  textResult: '#1a1208',
+  scoreBoard: { background: '#f5ede0', border: '1px solid rgba(184,146,42,0.2)' },
+  scoreBox:   { background: '#f5ede0', border: '1px solid #e0d0b0', color: '#7a6a4a' },
+  scoreInput: { background: '#fff', border: '1px solid rgba(184,146,42,0.4)', color: '#b8922a' },
+  resultRow:  { borderTop: '1px solid #e8dcc8', color: '#9a8a6a' },
+  podiumCard: { background: '#fffdf7', border: '1px solid #ece3d0' },
+  podiumName: '#1a1208',
+  lbTableHead:{ background: '#f5ede0', borderBottom: '1px solid #e8dcc8' },
+  lbTableRow: { borderBottom: '1px solid #f0e8d8' },
+  lbRowName:  '#1a1208',
 }
 
 // ─── STILURI ─────────────────────────────────────────────────────────────────
@@ -1496,21 +1524,21 @@ const S = {
   cardGreen:  { background: 'rgba(111,207,156,0.06)', borderColor: 'rgba(111,207,156,0.28)' },
   cardLocked: { background: '#1a1a1f', borderColor: 'rgba(224,113,124,0.14)' },
 
-  matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7d7d86', letterSpacing: 0.5 },
+  matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, letterSpacing: 0.5 },
   matchMetaDot: { color: 'rgba(212,175,55,0.5)' },
-  matchGroup: { color: '#5a5a62' },
-  teamName: { flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, color: '#f5f1e8' },
+  matchGroup: {},
+  teamName: { flex: 1, fontSize: 13.5, fontWeight: 600, lineHeight: 1.3 },
 
-  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: '#15151a', padding: '4px 7px', borderRadius: 10, border: '1px solid rgba(212,175,55,0.15)' },
-  scoreInput: { width: 38, height: 36, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.3)', borderRadius: 8, color: '#f0b429', fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', background: '#15151a', border: '1px solid rgba(212,175,55,0.4)', borderRadius: 8, color: '#f0b429', fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
-  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 8, fontSize: 18, fontWeight: 700, color: '#8a8a93', fontFamily: "'Oswald',monospace" },
-  scoreDisplay2: { flex: 1, padding: '10px 14px', textAlign: 'center', background: '#15151a', border: '1px solid rgba(245,241,232,0.08)', borderRadius: 8, fontSize: 13.5, fontWeight: 600, color: '#cdd0d6' },
-  selectInput: { flex: 1, minWidth: 150, padding: '11px 12px', borderRadius: 8, border: '1px solid rgba(212,175,55,0.3)', background: '#15151a', color: '#f5f1e8', fontSize: 13.5, outline: 'none', fontFamily: "'Inter',sans-serif" },
+  scoreboardWrap: { display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '4px 7px', borderRadius: 10 },
+  scoreInput: { width: 38, height: 36, textAlign: 'center', borderRadius: 8, fontSize: 18, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreInputAdmin: { width: 36, height: 32, textAlign: 'center', borderRadius: 8, fontSize: 16, fontWeight: 700, outline: 'none', fontFamily: "'Oswald',monospace", padding: 0 },
+  scoreDisplay: { width: 38, height: 36, textAlign: 'center', lineHeight: '36px', borderRadius: 8, fontSize: 18, fontWeight: 700, fontFamily: "'Oswald',monospace" },
+  scoreDisplay2: { flex: 1, padding: '10px 14px', textAlign: 'center', borderRadius: 8, fontSize: 13.5, fontWeight: 600 },
+  selectInput: { flex: 1, minWidth: 150, padding: '11px 12px', borderRadius: 8, fontSize: 13.5, outline: 'none', fontFamily: "'Inter',sans-serif" },
   colon: { fontSize: 16, color: 'rgba(212,175,55,0.5)', flexShrink: 0, fontFamily: "'Oswald',sans-serif" },
 
-  resultRow: { marginTop: 9, paddingTop: 9, borderTop: '1px solid rgba(245,241,232,0.05)', fontSize: 12, color: '#7d7d86', display: 'flex', alignItems: 'center', gap: 10 },
-  resultScore: { color: '#f5f1e8', fontFamily: "'Oswald',monospace", fontSize: 13 },
+  resultRow: { marginTop: 9, paddingTop: 9, fontSize: 12, display: 'flex', alignItems: 'center', gap: 10 },
+  resultScore: { fontFamily: "'Oswald',monospace", fontSize: 13 },
 
   ptsBadge: { fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 11, padding: '2px 9px', borderRadius: 20, letterSpacing: 0.5 },
   ptsBadgeGold:  { color: '#0a0a0c', background: 'linear-gradient(135deg,#f4c430,#c89a2e)' },
@@ -1522,25 +1550,25 @@ const S = {
   timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.5 },
   liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#f0b429', display: 'inline-block' },
 
-  emptyMsg: { color: '#7d7d86', fontStyle: 'italic', fontSize: 13.5 },
+  emptyMsg: { fontStyle: 'italic', fontSize: 13.5 },
 
   // ── Podium top 3 (ca în model) ──
   podiumWrap: { display: 'flex', gap: 10, marginBottom: 22 },
-  podiumCard: { flex: 1, background: '#1e1e24', border: '1px solid rgba(245,241,232,0.07)', borderRadius: 18, padding: '18px 10px 14px', textAlign: 'center', position: 'relative' },
+  podiumCard: { flex: 1, borderRadius: 18, padding: '18px 10px 14px', textAlign: 'center', position: 'relative' },
   podiumMe: { border: '1px solid rgba(240,180,41,0.55)', boxShadow: '0 0 0 1px rgba(240,180,41,0.25), 0 10px 24px rgba(240,180,41,0.08)' },
   podiumAvatar: { width: 52, height: 52, lineHeight: '52px', borderRadius: '50%', margin: '0 auto 10px', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 16, border: '2px solid rgba(245,241,232,0.1)' },
   avatarGold:   { background: 'linear-gradient(135deg,#f4c430,#c89a2e)', color: '#0a0a0c', borderColor: 'rgba(244,196,48,0.5)' },
   avatarSilver: { background: 'linear-gradient(135deg,#e4e8e6,#aab2af)', color: '#0a0a0c', borderColor: 'rgba(200,205,202,0.5)' },
   avatarBronze: { background: 'linear-gradient(135deg,#dba36e,#a06a3e)', color: '#0a0a0c', borderColor: 'rgba(219,163,110,0.5)' },
   avatarDefault: { background: '#26262e', color: '#cdd0d6', borderColor: 'rgba(245,241,232,0.08)' },
-  podiumName: { fontSize: 13, fontWeight: 600, color: '#f5f1e8', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  podiumName: { fontSize: 13, fontWeight: 600, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   podiumScore: { fontFamily: "'Oswald',monospace", fontSize: 20, fontWeight: 700, color: '#f0b429' },
   podiumScoreUnit: { fontSize: 11, fontWeight: 400, color: '#9b9ba3', marginLeft: 2, fontFamily: "'Inter',sans-serif" },
   podiumRank: { position: 'absolute', top: 8, left: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 700, color: '#5a5a62' },
 
   // ── Tabel clasament (ca în model: # / Jucător / Exacte / Puncte) ──
   lbTableWrap: { border: '1px solid rgba(245,241,232,0.07)', borderRadius: 16, overflow: 'hidden', marginBottom: 28 },
-  lbTableHead: { display: 'flex', alignItems: 'center', padding: '11px 16px', background: '#15151a', borderBottom: '1px solid rgba(245,241,232,0.06)' },
+  lbTableHead: { display: 'flex', alignItems: 'center', padding: '11px 16px' },
   lbColRank: { width: 28, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
   lbColName: { flex: 1, display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
   lbColExact: { width: 64, textAlign: 'center', fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#7d7d86', letterSpacing: 0.6, textTransform: 'uppercase' },
