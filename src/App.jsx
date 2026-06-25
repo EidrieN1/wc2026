@@ -69,6 +69,10 @@ export default function App() {
   const [chatInput, setChatInput] = useState('')
   const [lastSeenTs, setLastSeenTs] = useState(() => Date.now())
   const [chatOpen, setChatOpen]     = useState(false)
+  const [theme, setTheme]           = useState(() => localStorage.getItem('wc2026_theme') || 'dark')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const isDark = theme === 'dark'
+  const toggleTheme = () => { const t = isDark ? 'light' : 'dark'; setTheme(t); localStorage.setItem('wc2026_theme', t) }
   const [predictions, setPreds]   = useState({})           // { name: { matchId: {home,away} } }
   const [results, setResults]     = useState({})           // { matchId: {home,away} }
   const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
@@ -473,13 +477,23 @@ export default function App() {
     } catch (e) { showToast('Eroare la trimitere', 'err') }
   }
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const close = () => setDropdownOpen(false)
+    document.addEventListener('click', close, true)
+    return () => document.removeEventListener('click', close, true)
+  }, [dropdownOpen])
+
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
+  const T = isDark ? DARK : LIGHT
+
   return (
-    <div className="wc-app" style={S.root}>
+    <div className="wc-app" style={{ ...S.root, ...T.root }}>
       {/* ── HEADER ── */}
-      <header style={S.header}>
-        <div style={S.headerTopLine} />
+      <header style={{ ...S.header, ...T.header, boxShadow: S.header.boxShadow }}>
+        <div style={{ ...S.headerTopLine, background: T.headerLine.background }} />
         <div style={S.headerInner}>
           <div style={S.logo}>
             <div style={S.logoMark}>
@@ -491,14 +505,57 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <div style={S.logoTitle}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
-              <div style={S.logoSub}>Pariorii AERO PART EXPERT</div>
+              <div style={{ ...S.logoTitle, color: T.text }}>CUPA MONDIALĂ <span style={S.logoYear}>2026</span></div>
+              <div style={{ ...S.logoSub, color: T.textSub }}>Pariorii AERO PART EXPERT</div>
             </div>
           </div>
           {currentUser && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={S.userBadge}>{currentUser.name}</span>
-              <button style={S.btnGhost} onClick={handleLogout}>Ieșire</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+              {/* Theme toggle */}
+              <button onClick={toggleTheme} style={{
+                background: 'none', border: '1px solid rgba(212,175,55,0.3)',
+                borderRadius: 8, width: 34, height: 34, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, flexShrink: 0,
+                color: isDark ? '#f0b429' : '#b8922a',
+              }} title={isDark ? 'Temă deschisă' : 'Temă închisă'}>
+                {isDark ? '☀️' : '🌙'}
+              </button>
+              {/* User dropdown */}
+              <button onClick={() => setDropdownOpen(o => !o)} style={{
+                ...S.userBadge,
+                cursor: 'pointer', border: '1px solid rgba(212,175,55,0.35)',
+                display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(212,175,55,0.12)',
+              }}>
+                {currentUser.name}
+                <span style={{ fontSize: 9, opacity: 0.7 }}>{dropdownOpen ? '▲' : '▼'}</span>
+              </button>
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute', top: '110%', right: 0, zIndex: 200,
+                  background: isDark ? '#1e1e24' : '#fff',
+                  border: `1px solid ${isDark ? 'rgba(212,175,55,0.25)' : '#e8e0d0'}`,
+                  borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  minWidth: 160, overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '10px 16px', fontSize: 11, color: isDark ? '#8a8a93' : '#9a8a6a', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0e8d8'}`, fontFamily: "'Oswald',sans-serif", letterSpacing: 0.5 }}>
+                    Conectat ca
+                  </div>
+                  <div style={{ padding: '8px 16px', fontSize: 13, fontWeight: 600, color: isDark ? '#f0b429' : '#b8922a' }}>
+                    {currentUser.name}
+                  </div>
+                  <div style={{ borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0e8d8'}` }}>
+                    <button onClick={() => { setDropdownOpen(false); handleLogout() }} style={{
+                      width: '100%', padding: '10px 16px', background: 'none',
+                      border: 'none', textAlign: 'left', cursor: 'pointer',
+                      fontSize: 13, color: '#e0717c', fontFamily: "'Inter',sans-serif",
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      ⏻ Ieșire
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -511,7 +568,7 @@ export default function App() {
               ['leaderboard','Clasament'],
               ['admin','Admin']
             ].map(([k,l]) => (
-              <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }}
+              <button key={k} style={{ ...S.navBtn, color: view===k ? T.gold : T.textSub, borderBottom: view===k ? `2px solid ${T.gold}` : '2px solid transparent' }}
                 onClick={() => goTo(k)}>{l}</button>
             ))}
 
@@ -527,12 +584,12 @@ export default function App() {
 
       )}
 
-      <main style={S.main}>
+      <main style={{ ...S.main, color: T.text }}>
 
         {/* ════ LOGIN ════ */}
         {view === 'login' && (
           <div style={S.center}>
-            <div style={S.card}>
+            <div style={{ ...S.card, ...T.card, boxShadow: S.card.boxShadow }}>
               <div style={S.cardCrest}>
                 <svg width="36" height="36" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" fill="#f5f1e8"/>
@@ -541,13 +598,13 @@ export default function App() {
                   <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#0a0a0c" strokeWidth="1.1" strokeLinecap="round"/>
                 </svg>
               </div>
-              <h2 style={S.cardTitle}>Intră în joc</h2>
+              <h2 style={{ ...S.cardTitle, color: T.text }}>Intră în joc</h2>
               <div style={S.cardDivider} />
 
               {loginStep === 'name' && (
                 <>
-                  <p style={S.cardSub}>Introdu numele tău de participant</p>
-                  <input style={S.input} placeholder="Numele tău (ex: Adrian)"
+                  <p style={{ ...S.cardSub, color: T.textSub }}>Introdu numele tău de participant</p>
+                  <input style={{ ...S.input, ...T.input }} placeholder="Numele tău (ex: Adrian)"
                     value={inputName} maxLength={20}
                     onChange={e => setInputName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleNameSubmit()} />
@@ -558,8 +615,8 @@ export default function App() {
 
               {loginStep === 'password' && (
                 <>
-                  <p style={S.cardSub}>Salut, <b style={S.cardSubAccent}>{inputName}</b>! Introdu parola ta.</p>
-                  <input style={S.input} type="password" placeholder="Parola ta"
+                  <p style={{ ...S.cardSub, color: T.textSub }}>Salut, <b style={S.cardSubAccent}>{inputName}</b>! Introdu parola ta.</p>
+                  <input style={{ ...S.input, ...T.input }} type="password" placeholder="Parola ta"
                     value={inputPass}
                     onChange={e => setInputPass(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleLoginPassword()} />
@@ -574,14 +631,14 @@ export default function App() {
 
               {loginStep === 'register' && (
                 <>
-                  <p style={S.cardSub}>
+                  <p style={{ ...S.cardSub, color: T.textSub }}>
                     Cont nou pentru <b style={S.cardSubAccent}>{inputName}</b>.<br/>
                     Alege o parolă cu care te vei loga data viitoare.
                   </p>
-                  <input style={S.input} type="password" placeholder="Alege o parolă (min. 4 caractere)"
+                  <input style={{ ...S.input, ...T.input }} type="password" placeholder="Alege o parolă (min. 4 caractere)"
                     value={inputPass}
                     onChange={e => setInputPass(e.target.value)} />
-                  <input style={S.input} type="password" placeholder="Confirmă parola"
+                  <input style={{ ...S.input, ...T.input }} type="password" placeholder="Confirmă parola"
                     value={inputPass2}
                     onChange={e => setInputPass2(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleRegister()} />
@@ -601,13 +658,13 @@ export default function App() {
         {view === 'predict' && currentUser && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h2 style={S.pageTitle}>Pronosticurile tale</h2>
+              <h2 style={{ ...S.pageTitle, color: T.text }}>Pronosticurile tale</h2>
               <button style={{ ...S.btnPrimary, width: 'auto', padding: '10px 20px', fontSize: 13 }}
                 onClick={savePredictions} disabled={saving}>
                 {saving ? 'Se salvează...' : 'Salvează'}
               </button>
             </div>
-            <div style={S.infoBox}>
+            <div style={{ ...S.infoBox, ...T.infoBox }}>
               <span style={S.infoPt}><b style={S.infoPtGold}>5p</b> scor exact</span>
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtBlue}>3p</b> diferență goluri</span>
@@ -618,7 +675,7 @@ export default function App() {
 
             {Object.entries(groupMatchesByDay).map(([day, dayMatches]) => (
               <div key={day} style={{ marginBottom: 26 }}>
-                <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
+                <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
                 {dayMatches.map(m => {
                   const pred    = localPreds[m.id] || { home: '', away: '' }
                   const res     = results[m.id]
@@ -700,8 +757,8 @@ export default function App() {
         {/* ════ SPECIALE ════ */}
         {view === 'special' && currentUser && (
           <div>
-            <h2 style={S.pageTitle}>Pronosticuri speciale</h2>
-            <div style={S.infoBox}>
+            <h2 style={{ ...S.pageTitle, color: T.text }}>Pronosticuri speciale</h2>
+            <div style={{ ...S.infoBox, ...T.infoBox }}>
               <span style={S.infoPt}><b style={S.infoPtGold}>20p</b> ambii finaliști corecți</span>
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtBlue}>10p</b> un finalist corect</span>
@@ -714,7 +771,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={S.dayLabel}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
+            <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
             <div style={S.matchCard}>
               <div style={S.cardStripeGold} />
               <div style={S.matchCardBody}>
@@ -846,10 +903,10 @@ export default function App() {
         {/* ════ POOL-UL MEU ════ */}
         {view === 'mypool' && currentUser && (
           <div>
-            <h2 style={S.pageTitle}>Pool-ul meu</h2>
-            <div style={S.infoBox}>Aici vezi doar meciurile la care ai pus deja un pronostic.</div>
+            <h2 style={{ ...S.pageTitle, color: T.text }}>Pool-ul meu</h2>
+            <div style={{ ...S.infoBox, ...T.infoBox }}>Aici vezi doar meciurile la care ai pus deja un pronostic.</div>
 
-            <div style={S.dayLabel}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
+            <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
             {myPlayedMatches.length === 0
               ? <p style={{ ...S.emptyMsg, marginBottom: 22 }}>Niciun meci jucat din pronosticurile tale încă.</p>
               : myPlayedMatches.map(m => {
@@ -945,7 +1002,7 @@ export default function App() {
         {/* ════ CLASAMENT ════ */}
         {view === 'leaderboard' && (
           <div>
-            <h2 style={S.pageTitle}>Clasament</h2>
+            <h2 style={{ ...S.pageTitle, color: T.text }}>Clasament</h2>
 
             {leaderboard.length === 0
               ? <p style={S.emptyMsg}>Niciun jucător înregistrat.</p>
@@ -1047,15 +1104,15 @@ export default function App() {
             }
 
             <h3 style={{ ...S.pageTitle, fontSize: 15, marginBottom: 8, marginTop: 28 }}>Pronosticuri detaliate</h3>
-            <div style={S.infoBox}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
+            <div style={{ ...S.infoBox, ...T.infoBox }}>Pronosticurile devin vizibile pentru toți după blocarea meciului.</div>
             <div className="wc-scroll" style={{ overflowX: 'auto', marginTop: 12, borderRadius: 16, border: '1px solid rgba(212,175,55,0.18)', maxHeight: '60vh', overflowY: 'auto' }}>
               <table style={S.table}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
-                    <th style={S.th}>Meci</th>
-                    <th style={{ ...S.th, textAlign: 'center', color: '#d4af37' }}>Rezultat</th>
+                    <th style={{ ...S.th, ...T.th, ...T.th }}>Meci</th>
+                    <th style={{ ...S.th, ...T.th, textAlign: 'center', color: '#d4af37' }}>Rezultat</th>
                     {orderedUserNames.map(u => (
-                      <th key={u} style={{ ...S.th, textAlign: 'center', ...(u===currentUser?.name ? S.thMe : {}) }}>
+                      <th key={u} style={{ ...S.th, ...T.th, textAlign: 'center', ...(u===currentUser?.name ? S.thMe : {}) }}>
                         {u}
                       </th>
                     ))}
@@ -1068,13 +1125,13 @@ export default function App() {
                     const hasRes = res && res.home !== '' && res.away !== ''
                     return (
                       <tr key={m.id} style={S.tr}>
-                        <td style={{ ...S.td, minWidth: 140 }}>
+                        <td style={{ ...S.td, ...T.td, minWidth: 140 }}>
                           <div style={S.tdMatch}>{m.home} <span style={S.tdVs}>vs</span> {m.away}</div>
                           <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7d7d86' }}>
                             {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
                         </td>
-                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, color: '#d4af37' }}>
+                        <td style={{ ...S.td, ...T.td, textAlign: 'center', fontWeight: 700, color: '#d4af37' }}>
                           {hasRes ? `${res.home}–${res.away}` : <span style={S.tdDash}>–</span>}
                         </td>
                         {orderedUserNames.map(u => {
@@ -1083,7 +1140,7 @@ export default function App() {
                           const pts = hasPred && hasRes ? calcScore(p, res) : null
                           const isMe = u === currentUser?.name
                           return (
-                            <td key={u} style={{ ...S.td, textAlign: 'center',
+                            <td key={u} style={{ ...S.td, ...T.td, textAlign: 'center',
                               ...(isMe ? S.tdMe : {}),
                               color: pts===5?'#d4af37':pts===3?'#5b9bd5':pts===2?'#52b788':'inherit',
                               fontWeight: pts ? 700 : 400 }}>
@@ -1109,19 +1166,19 @@ export default function App() {
         {/* ════ ADMIN ════ */}
         {view === 'admin' && (
           <div>
-            <h2 style={S.pageTitle}>Panou Admin</h2>
+            <h2 style={{ ...S.pageTitle, color: T.text }}>Panou Admin</h2>
             {!adminMode ? (
               <div style={{ ...S.card, maxWidth: 400 }}>
                 <div style={S.cardCrest}>🔑</div>
-                <p style={S.cardSub}>Introdu parola de admin pentru a introduce rezultate.</p>
-                <input style={S.input} type="password" placeholder="Parolă admin"
+                <p style={{ ...S.cardSub, color: T.textSub }}>Introdu parola de admin pentru a introduce rezultate.</p>
+                <input style={{ ...S.input, ...T.input }} type="password" placeholder="Parolă admin"
                   value={adminInput} onChange={e => setAdminInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAdminLogin()} />
                 <button style={S.btnPrimary} onClick={handleAdminLogin}>Intră ca Admin</button>
               </div>
             ) : (
               <div>
-                <div style={S.dayLabel}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
+                <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <select style={S.selectInput} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
@@ -1147,7 +1204,7 @@ export default function App() {
                 <div style={{ ...S.infoBox, marginTop: 22 }}>Introdu scorurile finale. Punctajele se calculează automat.</div>
                 {Object.entries(matchesByDay).map(([day, dayMatches]) => (
                   <div key={day} style={{ marginBottom: 22 }}>
-                    <div style={S.dayLabel}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
+                    <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />{day}<span style={S.dayLabelLine} /></div>
                     {dayMatches.map(m => {
                       const res = localResults[m.id] || { home: '', away: '' }
                       return (
@@ -1313,11 +1370,56 @@ export default function App() {
           </button>
         </>
       )}
-      <footer style={S.footer}>
+      <footer style={{ ...S.footer, ...T.footer }}>
         <span style={S.footerBall}>⚽</span> World Cup 2026 Pronosticuri <span style={S.footerDot}>•</span> developed by <b style={S.footerName}>Adrian Barbos</b>
       </footer>
     </div>
   )
+}
+
+// ─── TEME ────────────────────────────────────────────────────────────────────
+const DARK = {
+  root:       { background: 'radial-gradient(ellipse 1000px 600px at 50% -10%, rgba(212,175,55,0.05), transparent 60%), linear-gradient(180deg, #17171c 0%, #1c1c22 100%)', color: '#f5f1e8' },
+  header:     { background: 'rgba(23,23,28,0.92)', borderBottom: '1px solid rgba(212,175,55,0.18)' },
+  headerLine: { background: 'linear-gradient(90deg, transparent, #d4af37 20%, #f0d878 50%, #d4af37 80%, transparent)' },
+  card:       { background: '#1e1e24', border: '1px solid rgba(212,175,55,0.2)' },
+  input:      { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(245,241,232,0.14)', color: '#f5f1e8' },
+  matchCard:  { background: '#1e1e24', border: '1px solid rgba(245,241,232,0.06)' },
+  infoBox:    { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.16)', color: '#9b9ba3' },
+  text:       '#f5f1e8',
+  textSub:    '#8a8a93',
+  textMuted:  '#5a5a62',
+  gold:       '#f0b429',
+  navBg:      'transparent',
+  lbRow:      { background: '#1e1e24', border: '1px solid rgba(245,241,232,0.07)' },
+  lbRowMe:    { background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.22)' },
+  th:         { background: '#17171c', color: '#8a8a93', borderBottom: '1px solid rgba(212,175,55,0.18)' },
+  td:         { borderBottom: '1px solid rgba(245,241,232,0.05)' },
+  dayLabel:   { color: '#f0b429' },
+  footer:     { borderTop: '1px solid rgba(212,175,55,0.1)', color: '#5a5a62' },
+  adminCard:  { background: '#1a1a1f', border: '1px solid rgba(245,241,232,0.07)' },
+}
+
+const LIGHT = {
+  root:       { background: 'linear-gradient(160deg, #faf6ef 0%, #f0ead8 100%)', color: '#1a1208' },
+  header:     { background: 'rgba(255,252,245,0.96)', borderBottom: '1px solid rgba(184,146,42,0.25)' },
+  headerLine: { background: 'linear-gradient(90deg, transparent, #b8922a 20%, #d4af37 50%, #b8922a 80%, transparent)' },
+  card:       { background: '#fffdf7', border: '1px solid rgba(184,146,42,0.22)' },
+  input:      { background: '#fff', border: '1px solid #e0d4b8', color: '#1a1208' },
+  matchCard:  { background: '#fffdf7', border: '1px solid #ece3d0' },
+  infoBox:    { background: 'rgba(184,146,42,0.06)', border: '1px solid rgba(184,146,42,0.2)', color: '#7a6a4a' },
+  text:       '#1a1208',
+  textSub:    '#7a6a4a',
+  textMuted:  '#a08a5a',
+  gold:       '#b8922a',
+  navBg:      'transparent',
+  lbRow:      { background: '#fffdf7', border: '1px solid #ece3d0' },
+  lbRowMe:    { background: 'rgba(184,146,42,0.08)', border: '1px solid rgba(184,146,42,0.3)' },
+  th:         { background: '#f5ede0', color: '#7a6a4a', borderBottom: '1px solid rgba(184,146,42,0.2)' },
+  td:         { borderBottom: '1px solid #f0e8d8' },
+  dayLabel:   { color: '#b8922a' },
+  footer:     { borderTop: '1px solid #e8dcc8', color: '#a08a5a' },
+  adminCard:  { background: '#faf5ec', border: '1px solid #ece3d0' },
 }
 
 // ─── STILURI ─────────────────────────────────────────────────────────────────
