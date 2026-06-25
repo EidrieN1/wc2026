@@ -44,6 +44,20 @@ function fmtHour(kickoff) {
   return new Date(kickoff).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Componentă reutilizabilă pentru steag (flagcdn.com), cu fallback discret dacă codul lipsește
+function Flag({ code, size = 18 }) {
+  if (!code) return null
+  return (
+    <img
+      src={`https://flagcdn.com/h${size * 2}/${code}.png`}
+      alt=""
+      style={{ height: size, width: 'auto', borderRadius: 2, verticalAlign: 'middle', flexShrink: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+      loading="lazy"
+      onError={e => { e.target.style.display = 'none' }}
+    />
+  )
+}
+
 // hash simplu pentru parolă (nu e crypto-safe, dar e suficient pentru un joc între prieteni)
 async function hashPass(pass) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass))
@@ -392,10 +406,10 @@ export default function App() {
     if (mySpecial?.finalScore && finalRes && finalRes.home !== '' && finalRes.away !== '') {
       const sh = parseInt(mySpecial.finalScore.home), sa = parseInt(mySpecial.finalScore.away)
       const rh = parseInt(finalRes.home), ra = parseInt(finalRes.away)
-      if (!isNaN(sh) && !isNaN(sa) && sh === rh && sa === ra) specialPts += 10
+      if (!isNaN(sh) && !isNaN(sa) && sh === rh && sa === ra) specialPts += 15
     }
     if (mySpecial?.champion && specialResults.champion && mySpecial.champion === specialResults.champion) {
-      specialPts += 10
+      specialPts += 15
     }
     total += specialPts
 
@@ -439,7 +453,18 @@ export default function App() {
     new Set(groupMatches.flatMap(m => [m.home, m.away]))
   ).sort((a, b) => a.localeCompare(b, 'ro'))
 
-  const specialLocked = isLocked(MATCHES.find(m => m.id === 31)?.kickoff)
+  // Mapare nume echipă → cod ISO (pentru steaguri în dropdown-uri, unde avem doar numele)
+  const teamFlagMap = groupMatches.reduce((acc, m) => {
+    if (m.home) acc[m.home] = m.homef
+    if (m.away) acc[m.away] = m.awayf
+    return acc
+  }, {})
+
+  // Ultimul meci din faza grupelor (cel mai târziu cronologic) — pronosticurile speciale se blochează cu 5 min înainte de el
+  const lastGroupMatch = groupMatches.length
+    ? groupMatches.reduce((latest, m) => new Date(m.kickoff) > new Date(latest.kickoff) ? m : latest, groupMatches[0])
+    : null
+  const specialLocked = isLocked(lastGroupMatch?.kickoff)
   const myFinalists = localSpecial.finalists
   const myFinalScore = localSpecial.finalScore
 
@@ -497,11 +522,19 @@ export default function App() {
         <div style={S.headerInner}>
           <div style={S.logo}>
             <div style={S.logoMark}>
-              <svg width="24" height="24" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" fill="#f5f1e8"/>
-                <circle cx="12" cy="12" r="10" fill="none" stroke="#0a0a0c" strokeWidth="1"/>
-                <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#0a0a0c"/>
-                <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#0a0a0c" strokeWidth="1.1" strokeLinecap="round"/>
+              <svg width="26" height="26" viewBox="0 0 24 24">
+                <defs>
+                  <radialGradient id="wcBallGrad" cx="35%" cy="30%" r="75%">
+                    <stop offset="0%" stopColor="#fff5d6"/>
+                    <stop offset="45%" stopColor="#f0c419"/>
+                    <stop offset="100%" stopColor="#b8862a"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="12" cy="12" r="10" fill="url(#wcBallGrad)"/>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="#7a5a18" strokeWidth="0.6"/>
+                <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#5c4112" opacity="0.85"/>
+                <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#5c4112" strokeWidth="1" strokeLinecap="round" opacity="0.85"/>
+                <ellipse cx="9" cy="8" rx="2.6" ry="1.6" fill="#fffbe8" opacity="0.45"/>
               </svg>
             </div>
             <div>
@@ -591,11 +624,19 @@ export default function App() {
           <div style={S.center}>
             <div style={{ ...S.card, ...T.card, boxShadow: S.card.boxShadow }}>
               <div style={S.cardCrest}>
-                <svg width="36" height="36" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" fill="#f5f1e8"/>
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="#0a0a0c" strokeWidth="1"/>
-                  <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#0a0a0c"/>
-                  <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#0a0a0c" strokeWidth="1.1" strokeLinecap="round"/>
+                <svg width="38" height="38" viewBox="0 0 24 24">
+                  <defs>
+                    <radialGradient id="wcBallGradLogin" cx="35%" cy="30%" r="75%">
+                      <stop offset="0%" stopColor="#fff5d6"/>
+                      <stop offset="45%" stopColor="#f0c419"/>
+                      <stop offset="100%" stopColor="#b8862a"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="12" cy="12" r="10" fill="url(#wcBallGradLogin)"/>
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="#7a5a18" strokeWidth="0.6"/>
+                  <polygon points="12,7.2 15.5,9.7 14.2,13.8 9.8,13.8 8.5,9.7" fill="#5c4112" opacity="0.85"/>
+                  <path d="M12,7.2 L12,3.2 M15.5,9.7 L19.2,8.4 M14.2,13.8 L16.6,17.2 M9.8,13.8 L7.4,17.2 M8.5,9.7 L4.8,8.4" stroke="#5c4112" strokeWidth="1" strokeLinecap="round" opacity="0.85"/>
+                  <ellipse cx="9" cy="8" rx="2.6" ry="1.6" fill="#fffbe8" opacity="0.45"/>
                 </svg>
               </div>
               <h2 style={{ ...S.cardTitle, color: T.text }}>Intră în joc</h2>
@@ -671,6 +712,7 @@ export default function App() {
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtGreen}>2p</b> câștigător corect</span>
               <div style={{ marginTop: 6, opacity: 0.8 }}>Pronosticurile se blochează automat cu 5 minute înainte de fiecare meci.</div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
             </div>
 
             {Object.entries(groupMatchesByDay).map(([day, dayMatches]) => (
@@ -708,7 +750,9 @@ export default function App() {
                           }
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                          <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Flag code={m.homef} /> {m.home}
+                          </span>
                           <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                             {locked
                               ? <>
@@ -727,7 +771,9 @@ export default function App() {
                                 </>
                             }
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
+                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                            {m.away} <Flag code={m.awayf} />
+                          </span>
                         </div>
                         {hasRes && (
                           <div style={{ ...S.resultRow, ...T.resultRow }}>
@@ -763,12 +809,13 @@ export default function App() {
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtBlue}>10p</b> un finalist corect</span>
               <span style={S.infoDot}>·</span>
-              <span style={S.infoPt}><b style={S.infoPtGreen}>10p</b> scor exact finală</span>
+              <span style={S.infoPt}><b style={S.infoPtGreen}>15p</b> scor exact finală</span>
               <span style={S.infoDot}>·</span>
-              <span style={S.infoPt}><b style={S.infoPtGold}>10p</b> campioana corectă</span>
+              <span style={S.infoPt}><b style={S.infoPtGold}>15p</b> campioana corectă</span>
               <div style={{ marginTop: 6, opacity: 0.8 }}>
-                Se blochează la începutul ultimului meci din faza grupelor (28 Iun, 22:00).
+                Se blochează la începutul ultimului meci din faza grupelor{lastGroupMatch ? ` (${lastGroupMatch.date}, ${fmtHour(lastGroupMatch.kickoff)})` : ''}.
               </div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
             </div>
 
             <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
@@ -782,28 +829,40 @@ export default function App() {
                       <span style={S.lockBadge}>Blocat</span>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{myFinalists[0] || '–'}</div>
-                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{myFinalists[1] || '–'}</div>
+                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Flag code={teamFlagMap[myFinalists[0]]} /> {myFinalists[0] || '–'}
+                      </div>
+                      <div style={{ ...S.scoreDisplay2, ...T.scoreBox, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Flag code={teamFlagMap[myFinalists[1]]} /> {myFinalists[1] || '–'}
+                      </div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div style={{ ...S.matchMeta, color: T.textMeta }}>Alege 2 echipe (fără ordine)</div>
                     <div style={{ display: 'flex', gap: 10, marginTop: 9, flexWrap: 'wrap' }}>
-                      <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[0] || ''} onChange={e => updateLocalFinalist(0, e.target.value)}>
-                        <option value="">Echipa 1...</option>
-                        {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[1]}>{t}</option>)}
-                      </select>
-                      <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[1] || ''} onChange={e => updateLocalFinalist(1, e.target.value)}>
-                        <option value="">Echipa 2...</option>
-                        {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[0]}>{t}</option>)}
-                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                        <Flag code={teamFlagMap[myFinalists[0]]} />
+                        <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[0] || ''} onChange={e => updateLocalFinalist(0, e.target.value)}>
+                          <option value="">Echipa 1...</option>
+                          {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[1]}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                        <Flag code={teamFlagMap[myFinalists[1]]} />
+                        <select style={{ ...S.selectInput, ...T.input }} value={myFinalists[1] || ''} onChange={e => updateLocalFinalist(1, e.target.value)}>
+                          <option value="">Echipa 2...</option>
+                          {allTeams.map(t => <option key={t} value={t} disabled={t === myFinalists[0]}>{t}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </>
                 )}
                 {specialResults.finalists?.[0] && specialResults.finalists?.[1] && (
                   <div style={{ ...S.resultRow, ...T.resultRow }}>
-                    Finaliști reali <b style={{ ...S.resultScore, color: T.textResult }}>{specialResults.finalists[0]} – {specialResults.finalists[1]}</b>
+                    Finaliști reali <b style={{ ...S.resultScore, color: T.textResult, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Flag code={teamFlagMap[specialResults.finalists[0]]} size={14} /> {specialResults.finalists[0]} – {specialResults.finalists[1]} <Flag code={teamFlagMap[specialResults.finalists[1]]} size={14} />
+                    </b>
                     {(() => {
                       const fPts = calcFinalistsScore(myFinalists, specialResults.finalists)
                       return fPts !== null && (
@@ -851,7 +910,7 @@ export default function App() {
                   return (
                     <div style={{ ...S.resultRow, ...T.resultRow }}>
                       Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{finalRes.home} – {finalRes.away}</b>
-                      <span style={{ ...S.ptsBadge, ...(exact ? S.ptsBadgeGold : S.ptsBadgeZero) }}>+{exact ? 10 : 0}p</span>
+                      <span style={{ ...S.ptsBadge, ...(exact ? S.ptsBadgeGold : S.ptsBadgeZero) }}>+{exact ? 15 : 0}p</span>
                     </div>
                   )
                 })()}
@@ -868,22 +927,29 @@ export default function App() {
                       <span style={{ ...S.matchMeta, color: T.textMeta }}>Pronosticul tău</span>
                       <span style={S.lockBadge}>Blocat</span>
                     </div>
-                    <div style={{ ...S.scoreDisplay2, ...T.scoreBox }}>{localSpecial.champion || '–'}</div>
+                    <div style={{ ...S.scoreDisplay2, ...T.scoreBox, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Flag code={teamFlagMap[localSpecial.champion]} /> {localSpecial.champion || '–'}
+                    </div>
                   </>
                 ) : (
                   <>
                     <div style={{ ...S.matchMeta, color: T.textMeta }}>Cine câștigă Cupa Mondială</div>
-                    <select style={{ ...S.selectInput, width: '100%', marginTop: 9 }} value={localSpecial.champion || ''} onChange={e => updateLocalChampion(e.target.value)}>
-                      <option value="">Echipa campioană...</option>
-                      {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 9 }}>
+                      <Flag code={teamFlagMap[localSpecial.champion]} />
+                      <select style={{ ...S.selectInput, width: '100%' }} value={localSpecial.champion || ''} onChange={e => updateLocalChampion(e.target.value)}>
+                        <option value="">Echipa campioană...</option>
+                        {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
                   </>
                 )}
                 {specialResults.champion && (
                   <div style={{ ...S.resultRow, ...T.resultRow }}>
-                    Campioana reală <b style={{ ...S.resultScore, color: T.textResult }}>{specialResults.champion}</b>
+                    Campioana reală <b style={{ ...S.resultScore, color: T.textResult, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Flag code={teamFlagMap[specialResults.champion]} size={14} /> {specialResults.champion}
+                    </b>
                     <span style={{ ...S.ptsBadge, ...(localSpecial.champion === specialResults.champion ? S.ptsBadgeGold : S.ptsBadgeZero) }}>
-                      +{localSpecial.champion === specialResults.champion ? 10 : 0}p
+                      +{localSpecial.champion === specialResults.champion ? 15 : 0}p
                     </span>
                   </div>
                 )}
@@ -904,7 +970,10 @@ export default function App() {
         {view === 'mypool' && currentUser && (
           <div>
             <h2 style={{ ...S.pageTitle, color: T.text }}>Pool-ul meu</h2>
-            <div style={{ ...S.infoBox, ...T.infoBox }}>Aici vezi doar meciurile la care ai pus deja un pronostic.</div>
+            <div style={{ ...S.infoBox, ...T.infoBox }}>
+              Aici vezi doar meciurile la care ai pus deja un pronostic.
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
+            </div>
 
             <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
             {myPlayedMatches.length === 0
@@ -926,13 +995,17 @@ export default function App() {
                           <span style={{ ...S.matchMeta, color: T.textMeta }}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                          <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Flag code={m.homef} /> {m.home}
+                          </span>
                           <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                             <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home}</div>
                             <span style={S.colon}>:</span>
                             <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away}</div>
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
+                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                            {m.away} <Flag code={m.awayf} />
+                          </span>
                         </div>
                         <div style={{ ...S.resultRow, ...T.resultRow }}>
                           Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
@@ -963,7 +1036,9 @@ export default function App() {
                             {locked && <span style={S.lockBadge}>Blocat</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ ...S.teamName, color: T.teamName }}>{m.home}</span>
+                            <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Flag code={m.homef} /> {m.home}
+                            </span>
                             <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                               {locked
                                 ? <>
@@ -982,7 +1057,9 @@ export default function App() {
                                   </>
                               }
                             </div>
-                            <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName }}>{m.away}</span>
+                            <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                              {m.away} <Flag code={m.awayf} />
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1194,7 +1271,9 @@ export default function App() {
                     return (
                       <tr key={m.id} style={S.tr}>
                         <td style={{ ...S.td, ...T.td, minWidth: 140 }}>
-                          <div style={S.tdMatch}>{m.home} <span style={S.tdVs}>vs</span> {m.away}</div>
+                          <div style={{ ...S.tdMatch, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            <Flag code={m.homef} size={12} /> {m.home} <span style={S.tdVs}>vs</span> {m.away} <Flag code={m.awayf} size={12} />
+                          </div>
                           <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7d7d86' }}>
                             {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
@@ -1249,16 +1328,23 @@ export default function App() {
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
-                      <option value="">Finalista 1...</option>
-                      {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[1]}>{t}</option>)}
-                    </select>
-                    <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[1] || ''} onChange={e => updateLocalSpecialResultFinalist(1, e.target.value)}>
-                      <option value="">Finalista 2...</option>
-                      {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[0]}>{t}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                      <Flag code={teamFlagMap[localSpecialResults.finalists[0]]} />
+                      <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[0] || ''} onChange={e => updateLocalSpecialResultFinalist(0, e.target.value)}>
+                        <option value="">Finalista 1...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[1]}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                      <Flag code={teamFlagMap[localSpecialResults.finalists[1]]} />
+                      <select style={{ ...S.selectInput, ...T.input }} value={localSpecialResults.finalists[1] || ''} onChange={e => updateLocalSpecialResultFinalist(1, e.target.value)}>
+                        <option value="">Finalista 2...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === localSpecialResults.finalists[0]}>{t}</option>)}
+                      </select>
+                    </div>
                   </div>
-                  <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                    <Flag code={teamFlagMap[localSpecialResults.champion]} />
                     <select style={{ ...S.selectInput, width: '100%' }} value={localSpecialResults.champion || ''} onChange={e => updateLocalSpecialResultChampion(e.target.value)}>
                       <option value="">Campioana...</option>
                       {allTeams.map(t => <option key={t} value={t}>{t}</option>)}
@@ -1282,7 +1368,9 @@ export default function App() {
                             {isLocked(m.kickoff) && <span style={S.lockBadge}>Blocat</span>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ ...S.teamName, fontSize: 12 }}>{m.home}</span>
+                            <span style={{ ...S.teamName, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <Flag code={m.homef} size={14} /> {m.home}
+                            </span>
                             <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
                               <input style={{ ...S.scoreInputAdmin, ...T.scoreInput }}
                                 type="number" min="0" max="20" value={res.home} placeholder="–"
@@ -1292,7 +1380,9 @@ export default function App() {
                                 type="number" min="0" max="20" value={res.away} placeholder="–"
                                 onChange={e => updateLocalResult(m.id, 'away', e.target.value)} />
                             </div>
-                            <span style={{ ...S.teamName, textAlign: 'right', fontSize: 12 }}>{m.away}</span>
+                            <span style={{ ...S.teamName, textAlign: 'right', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+                              {m.away} <Flag code={m.awayf} size={14} />
+                            </span>
                           </div>
                         </div>
                       )
@@ -1430,8 +1520,9 @@ export default function App() {
               <span className="wc-pulse-dot" style={{
                 position: 'absolute', top: 2, right: 2,
                 width: 10, height: 10, borderRadius: '50%',
-                background: '#e0717c',
+                background: '#f0c419',
                 border: '2px solid #17171c',
+                boxShadow: '0 0 8px rgba(240,196,25,0.8)',
                 animation: 'wcPulse 1.2s ease-in-out infinite',
               }} />
             )}
