@@ -53,7 +53,7 @@ async function hashPass(pass) {
 // ─── APP ─────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── State ──
-  const [view, setView]           = useState('login')      // login | predict | special | leaderboard | mypool | admin
+  const [view, setView]           = useState(() => sessionStorage.getItem('wc2026_view') || 'login')      // login | predict | special | leaderboard | mypool | admin
   const [loginStep, setLoginStep] = useState('name')       // name | password | register
   const [inputName, setInputName] = useState('')
   const [inputPass, setInputPass] = useState('')
@@ -185,10 +185,13 @@ export default function App() {
       try {
         const u = JSON.parse(saved)
         setCurrentUser(u)
-        setView('predict')
+        const savedView = sessionStorage.getItem('wc2026_view')
+        setView(savedView && savedView !== 'login' ? savedView : 'predict')
       } catch (_) {}
     }
   }, [])
+
+  const goTo = (v) => { setView(v); sessionStorage.setItem('wc2026_view', v) }
 
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type })
@@ -246,6 +249,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null)
     sessionStorage.removeItem('wc2026_user')
+    sessionStorage.removeItem('wc2026_view')
     setView('login')
     setLoginStep('name')
     setInputName('')
@@ -412,10 +416,15 @@ export default function App() {
     return acc
   }, {})
 
-  // Doar meciurile din faza grupelor — fazele eliminatorii se reintroduc manual ulterior, când se cunosc echipele
-  const groupMatches = sortedMatches.filter(m => m.group.startsWith('Grupa'))
+  // Meciuri vizibile în pronosticuri: viitoare + max 24h după kickoff
+  const TWENTY_FOUR_H = 24 * 60 * 60 * 1000
+  const visibleMatches = sortedMatches.filter(m =>
+    !m.kickoff || Date.now() < new Date(m.kickoff).getTime() + TWENTY_FOUR_H
+  )
 
-  const groupMatchesByDay = groupMatches.reduce((acc, m) => {
+  // Doar meciurile din faza grupelor vizibile
+  const groupMatches = sortedMatches.filter(m => m.group.startsWith('Grupa'))
+  const groupMatchesByDay = visibleMatches.filter(m => m.group.startsWith('Grupa')).reduce((acc, m) => {
     if (!acc[m.date]) acc[m.date] = []
     acc[m.date].push(m)
     return acc
@@ -503,7 +512,7 @@ export default function App() {
               ['admin','Admin']
             ].map(([k,l]) => (
               <button key={k} style={{ ...S.navBtn, ...(view===k ? S.navActive : {}) }}
-                onClick={() => setView(k)}>{l}</button>
+                onClick={() => goTo(k)}>{l}</button>
             ))}
 
           </nav>
@@ -1044,12 +1053,12 @@ export default function App() {
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
                     <th style={S.th}>Meci</th>
+                    <th style={{ ...S.th, textAlign: 'center', color: '#d4af37' }}>Rezultat</th>
                     {orderedUserNames.map(u => (
                       <th key={u} style={{ ...S.th, textAlign: 'center', ...(u===currentUser?.name ? S.thMe : {}) }}>
                         {u}
                       </th>
                     ))}
-                    <th style={{ ...S.th, textAlign: 'center' }}>Rezultat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1064,6 +1073,9 @@ export default function App() {
                           <div style={{ ...S.tdMeta, color: locked ? '#e0717c' : '#7d7d86' }}>
                             {locked ? '● blocat' : '○ deschis'} &nbsp;{m.date} {fmtHour(m.kickoff)}
                           </div>
+                        </td>
+                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, color: '#d4af37' }}>
+                          {hasRes ? `${res.home}–${res.away}` : <span style={S.tdDash}>–</span>}
                         </td>
                         {orderedUserNames.map(u => {
                           const p = predictions[u]?.[m.id]
@@ -1085,9 +1097,6 @@ export default function App() {
                             </td>
                           )
                         })}
-                        <td style={{ ...S.td, textAlign: 'center', fontWeight: 700, color: '#f5f1e8' }}>
-                          {hasRes ? `${res.home}–${res.away}` : <span style={S.tdDash}>–</span>}
-                        </td>
                       </tr>
                     )
                   })}
