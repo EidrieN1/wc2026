@@ -685,7 +685,7 @@ export default function App() {
                   const pts     = hasPred && hasRes ? calcScore(pred, res) : null
                   const minsLeft = m.kickoff ? Math.max(0, Math.ceil((new Date(m.kickoff) - now) / 60000)) : null
 
-                  let cardStyle = { ...S.matchCard }
+                  let cardStyle = { ...S.matchCard, ...T.matchCard }
                   let stripeStyle = S.cardStripeDefault
                   if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
                   else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
@@ -772,7 +772,7 @@ export default function App() {
             </div>
 
             <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
-            <div style={S.matchCard}>
+            <div style={{ ...S.matchCard, ...T.matchCard }}>
               <div style={S.cardStripeGold} />
               <div style={S.matchCardBody}>
                 {specialLocked ? (
@@ -816,7 +816,7 @@ export default function App() {
             </div>
 
             <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Scorul exact al finalei<span style={S.dayLabelLine} /></div>
-            <div style={S.matchCard}>
+            <div style={{ ...S.matchCard, ...T.matchCard }}>
               <div style={S.cardStripeGreen} />
               <div style={S.matchCardBody}>
                 <div style={S.matchMeta}>Indiferent ce echipe joacă</div>
@@ -859,7 +859,7 @@ export default function App() {
             </div>
 
             <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Campioana<span style={S.dayLabelLine} /></div>
-            <div style={S.matchCard}>
+            <div style={{ ...S.matchCard, ...T.matchCard }}>
               <div style={S.cardStripeBlue} />
               <div style={S.matchCardBody}>
                 {specialLocked ? (
@@ -913,7 +913,7 @@ export default function App() {
                   const pred = predictions[currentUser.name][m.id]
                   const res  = results[m.id]
                   const pts  = calcScore(pred, res)
-                  let cardStyle = { ...S.matchCard }
+                  let cardStyle = { ...S.matchCard, ...T.matchCard }
                   let stripeStyle = S.cardStripeDefault
                   if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
                   else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
@@ -955,7 +955,7 @@ export default function App() {
                     const pred = localPreds[m.id] || { home: '', away: '' }
                     const locked = isLocked(m.kickoff)
                     return (
-                      <div key={m.id} style={{ ...S.matchCard, ...(locked ? S.cardLocked : {}) }}>
+                      <div key={m.id} style={{ ...S.matchCard, ...T.matchCard, ...(locked ? S.cardLocked : {}) }}>
                         <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
                         <div style={S.matchCardBody}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
@@ -1491,9 +1491,9 @@ const S = {
   cardStripeBlue:   { width: 4, background: 'linear-gradient(180deg,#7fb3e0,#3a7ab0)', flexShrink: 0 },
   cardStripeGreen:  { width: 4, background: 'linear-gradient(180deg,#6fcf9c,#2f9e64)', flexShrink: 0 },
   cardStripeLocked: { width: 4, background: 'rgba(224,113,124,0.4)', flexShrink: 0 },
-  cardGold:   { background: 'linear-gradient(90deg, rgba(212,175,55,0.08), #1e1e24 35%)', borderColor: 'rgba(212,175,55,0.28)' },
-  cardBlue:   { background: 'linear-gradient(90deg, rgba(127,179,224,0.07), #1e1e24 35%)', borderColor: 'rgba(127,179,224,0.22)' },
-  cardGreen:  { background: 'linear-gradient(90deg, rgba(111,207,156,0.07), #1e1e24 35%)', borderColor: 'rgba(111,207,156,0.22)' },
+  cardGold:   { background: 'rgba(212,175,55,0.06)', borderColor: 'rgba(212,175,55,0.35)' },
+  cardBlue:   { background: 'rgba(127,179,224,0.06)', borderColor: 'rgba(127,179,224,0.28)' },
+  cardGreen:  { background: 'rgba(111,207,156,0.06)', borderColor: 'rgba(111,207,156,0.28)' },
   cardLocked: { background: '#1a1a1f', borderColor: 'rgba(224,113,124,0.14)' },
 
   matchMeta: { fontFamily: "'Oswald',sans-serif", fontSize: 11, color: '#7d7d86', letterSpacing: 0.5 },
