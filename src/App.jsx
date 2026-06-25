@@ -45,15 +45,18 @@ function fmtHour(kickoff) {
 }
 
 // Componentă reutilizabilă pentru steag (flagcdn.com), cu fallback discret dacă codul lipsește
+const FLAGCDN_HEIGHTS = [12, 15, 18, 21, 24, 27, 30, 36, 42, 45, 48, 54, 60, 63, 72, 81, 84, 90, 96, 108, 120, 144, 168, 192]
 function Flag({ code, size = 18 }) {
   if (!code) return null
+  const h = FLAGCDN_HEIGHTS.reduce((best, v) => Math.abs(v - size) < Math.abs(best - size) ? v : best, FLAGCDN_HEIGHTS[0])
+  const w = Math.round(h * 4 / 3)
   return (
     <img
-      src={`https://flagcdn.com/h${size * 2}/${code}.png`}
+      src={`https://flagcdn.com/${w}x${h}/${code.toLowerCase()}.png`}
       alt=""
-      style={{ height: size, width: 'auto', borderRadius: 2, verticalAlign: 'middle', flexShrink: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}
+      style={{ height: size, width: size * (4 / 3), borderRadius: 2, verticalAlign: 'middle', flexShrink: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.08)', objectFit: 'cover' }}
       loading="lazy"
-      onError={e => { e.target.style.display = 'none' }}
+      onError={e => { e.target.style.visibility = 'hidden' }}
     />
   )
 }
@@ -460,11 +463,17 @@ export default function App() {
     return acc
   }, {})
 
-  // Ultimul meci din faza grupelor (cel mai târziu cronologic) — pronosticurile speciale se blochează cu 5 min înainte de el
-  const lastGroupMatch = groupMatches.length
-    ? groupMatches.reduce((latest, m) => new Date(m.kickoff) > new Date(latest.kickoff) ? m : latest, groupMatches[0])
+  // Primul meci din Runda de 32 (16-imi): Africa de Sud - Canada, 28 Iun 22:00.
+  // matches.js nu are încă echipele reale pentru această fază (sunt placeholder),
+  // deci folosim temporar data confirmată manual. Când se adaugă meciul real cu echipe
+  // în matches.js, codul de mai jos îl preferă automat pe acesta (nu mai e nevoie să se modifice aici).
+  const KNOCKOUT_R32_FALLBACK_KICKOFF = '2026-06-28T22:00:00'
+  const roundOf16Matches = sortedMatches.filter(m => m.group === '16-imi' && m.homef && m.awayf)
+  const firstR16Match = roundOf16Matches.length
+    ? roundOf16Matches.reduce((earliest, m) => new Date(m.kickoff) < new Date(earliest.kickoff) ? m : earliest, roundOf16Matches[0])
     : null
-  const specialLocked = isLocked(lastGroupMatch?.kickoff)
+  const specialLockKickoff = firstR16Match?.kickoff || KNOCKOUT_R32_FALLBACK_KICKOFF
+  const specialLocked = isLocked(specialLockKickoff)
   const myFinalists = localSpecial.finalists
   const myFinalScore = localSpecial.finalScore
 
@@ -813,7 +822,7 @@ export default function App() {
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtGold}>15p</b> campioana corectă</span>
               <div style={{ marginTop: 6, opacity: 0.8 }}>
-                Se blochează la începutul ultimului meci din faza grupelor{lastGroupMatch ? ` (${lastGroupMatch.date}, ${fmtHour(lastGroupMatch.kickoff)})` : ''}.
+                Se blochează la începutul primului meci din 16-imi ({new Date(specialLockKickoff).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })}, {fmtHour(specialLockKickoff)}).
               </div>
               <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
             </div>
