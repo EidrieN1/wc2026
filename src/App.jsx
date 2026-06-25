@@ -1062,18 +1062,86 @@ export default function App() {
                   </div>
 
                   {/* ── Podium top 3 ── */}
-                  <div style={S.podiumWrap}>
-                    {leaderboard.slice(0, 3).map((u, i) => (
-                      <div key={u.name} style={{ ...S.podiumCard, ...(u.name===currentUser?.name ? S.podiumMe : {}) }}>
-                        <div style={{ ...S.podiumAvatar, ...(i===0?S.avatarGold:i===1?S.avatarSilver:S.avatarBronze) }}>
-                          {u.name.slice(0,2).toUpperCase()}
-                        </div>
-                        <div style={{ ...S.podiumName, color: T.podiumName }}>{u.name}{u.name===currentUser?.name?' (tu)':''}</div>
-                        <div style={S.podiumScore}>{u.total}<small style={S.podiumScoreUnit}>p</small></div>
-                        <div style={S.podiumRank}>{i+1}</div>
+                  {leaderboard.length >= 1 && (() => {
+                    const top = [leaderboard[1], leaderboard[0], leaderboard[2]].filter(Boolean)
+                    const order = [1, 0, 2] // silver, gold, bronze display order
+                    const heights = [80, 110, 60] // step heights px
+                    const medals = ['🥈','🥇','🥉']
+                    const avatarStyles = [S.avatarSilver, S.avatarGold, S.avatarBronze]
+                    const ranks = [2, 1, 3]
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 24, padding: '0 4px' }}>
+                        {top.map((u, displayIdx) => {
+                          const realIdx = leaderboard.indexOf(u)
+                          const isGold = realIdx === 0
+                          const isSilver = realIdx === 1
+                          const stepH = isGold ? 110 : isSilver ? 80 : 60
+                          const avatarSize = isGold ? 68 : 56
+                          const isMe = u.name === currentUser?.name
+                          return (
+                            <div key={u.name} style={{
+                              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            }}>
+                              {/* Avatar + name above platform */}
+                              <div style={{ fontSize: isGold ? 22 : 18, marginBottom: 4 }}>
+                                {isGold ? '🥇' : isSilver ? '🥈' : '🥉'}
+                              </div>
+                              <div style={{
+                                width: avatarSize, height: avatarSize, lineHeight: `${avatarSize}px`,
+                                borderRadius: '50%', margin: '0 auto 6px',
+                                fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+                                fontSize: isGold ? 20 : 16,
+                                textAlign: 'center',
+                                boxShadow: isMe ? `0 0 0 3px ${T.gold}, 0 0 16px rgba(212,175,55,0.4)` : isGold ? '0 4px 16px rgba(212,175,55,0.35)' : '0 2px 8px rgba(0,0,0,0.3)',
+                                ...(isGold ? S.avatarGold : isSilver ? S.avatarSilver : S.avatarBronze),
+                              }}>
+                                {u.name.slice(0,2).toUpperCase()}
+                              </div>
+                              <div style={{
+                                fontSize: isGold ? 13.5 : 12, fontWeight: 700,
+                                color: T.podiumName, textAlign: 'center',
+                                maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                marginBottom: 2,
+                              }}>
+                                {u.name}{isMe ? ' 👤' : ''}
+                              </div>
+                              <div style={{
+                                fontFamily: "'Oswald',sans-serif", fontSize: isGold ? 18 : 15,
+                                fontWeight: 700, color: T.gold, marginBottom: 6,
+                              }}>
+                                {u.total}<small style={{ fontSize: 10, fontWeight: 400, marginLeft: 2, opacity: 0.7 }}>p</small>
+                              </div>
+                              {/* Platform / step */}
+                              <div style={{
+                                width: '100%', height: stepH,
+                                borderRadius: '10px 10px 0 0',
+                                background: isGold
+                                  ? 'linear-gradient(180deg, #3a3020 0%, #252010 100%)'
+                                  : isDark
+                                    ? 'linear-gradient(180deg, #26262e 0%, #1c1c22 100%)'
+                                    : 'linear-gradient(180deg, #ede5d0 0%, #e0d4b8 100%)',
+                                border: isGold
+                                  ? '1px solid rgba(212,175,55,0.45)'
+                                  : isDark ? '1px solid rgba(245,241,232,0.1)' : '1px solid #d4c4a0',
+                                borderBottom: 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: isGold ? '0 -2px 12px rgba(212,175,55,0.15)' : 'none',
+                              }}>
+                                <span style={{
+                                  fontFamily: "'Oswald',sans-serif",
+                                  fontSize: isGold ? 32 : 24,
+                                  fontWeight: 700,
+                                  color: isGold ? 'rgba(212,175,55,0.25)' : isDark ? 'rgba(245,241,232,0.06)' : 'rgba(0,0,0,0.06)',
+                                }}>
+                                  {isGold ? '1' : isSilver ? '2' : '3'}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })()}
 
                   {/* ── Tabel clasament complet ── */}
                   <div style={S.lbTableWrap}>
