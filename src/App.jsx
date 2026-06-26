@@ -84,7 +84,7 @@ export default function App() {
   const [users, setUsers]         = useState({})           // { name: { hash } }
   const [messages, setMessages]   = useState([])
   const [chatInput, setChatInput] = useState('')
-  const [lastSeenTs, setLastSeenTs] = useState(() => Date.now())
+  const [lastSeenTs, setLastSeenTs] = useState(() => parseInt(localStorage.getItem('wc2026_chat_seen') || '0', 10))
   const [chatOpen, setChatOpen]     = useState(false)
   const [theme, setTheme]           = useState(() => localStorage.getItem('wc2026_theme') || 'dark')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -123,6 +123,10 @@ export default function App() {
     style.id = 'wc2026-anim'
     style.textContent = `
       @keyframes wcPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+      @keyframes wcBadgePulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(240,196,25,0.5), 0 0 10px rgba(240,196,25,0.8); } 50% { transform: scale(1.18); box-shadow: 0 0 0 1px rgba(240,196,25,0.6), 0 0 22px rgba(240,196,25,1); } }
+      @media (prefers-reduced-motion: reduce) {
+        .wc-badge-pulse { animation: none !important; }
+      }
       @keyframes wcRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes wcPrizeIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes wcPrizePulse { 0%,100% { transform: scale(1); text-shadow: 0 0 24px rgba(212,175,55,0.5); } 50% { transform: scale(1.045); text-shadow: 0 0 44px rgba(244,196,48,0.85), 0 0 80px rgba(212,175,55,0.3); } }
@@ -499,7 +503,11 @@ export default function App() {
   // ─── CHAT ────────────────────────────────────────────────────────────────
   const unread = messages.filter(m => m.ts > lastSeenTs && m.user !== currentUser?.name).length
 
-  const markChatRead = () => setLastSeenTs(Date.now())
+  const markChatRead = () => {
+    const ts = Date.now()
+    setLastSeenTs(ts)
+    localStorage.setItem('wc2026_chat_seen', String(ts))
+  }
   const toggleChat = () => { setChatOpen(o => !o); if (!chatOpen) markChatRead() }
 
   const sendMessage = async () => {
@@ -1526,14 +1534,19 @@ export default function App() {
           >
             {chatOpen ? '✕' : '💬'}
             {!chatOpen && unread > 0 && (
-              <span className="wc-pulse-dot" style={{
-                position: 'absolute', top: 2, right: 2,
-                width: 10, height: 10, borderRadius: '50%',
-                background: '#f0c419',
-                border: '2px solid #17171c',
-                boxShadow: '0 0 8px rgba(240,196,25,0.8)',
-                animation: 'wcPulse 1.2s ease-in-out infinite',
-              }} />
+              <span className="wc-pulse-dot wc-badge-pulse" style={{
+                position: 'absolute', top: -4, right: -4,
+                minWidth: 22, height: 22, padding: '0 5px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle at 35% 30%, #fff5b0, #f0c419 55%, #d9a30f 100%)',
+                border: '2.5px solid #17171c',
+                animation: 'wcBadgePulse 1.1s ease-in-out infinite',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: "'Oswald',sans-serif", fontSize: 11.5, fontWeight: 800,
+                color: '#1a1208', lineHeight: 1,
+              }}>
+                {unread > 9 ? '9+' : unread}
+              </span>
             )}
           </button>
         </>
