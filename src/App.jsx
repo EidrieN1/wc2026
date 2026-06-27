@@ -95,7 +95,7 @@ export default function App() {
   const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
   const [specialResults, setSpecialResults] = useState({}) // { finalists: [a,b] }
   const [knockoutMatches, setKnockoutMatches] = useState({}) // { matchId: { id, group, home, homef, away, awayf, date, kickoff } }
-  const [newKO, setNewKO] = useState({ group: '1/16-finale', home: '', away: '', kickoff: '' })
+  const [newKO, setNewKO] = useState({ group: 'Round of 32', home: '', away: '', kickoff: '' })
   const [savingKO, setSavingKO] = useState(false)
 
   const [localPreds, setLocalPreds] = useState({})         // buffer local înainte de save
@@ -539,7 +539,7 @@ export default function App() {
   // deci folosim temporar data confirmată manual. Când se adaugă meciul real cu echipe
   // în matches.js, codul de mai jos îl preferă automat pe acesta (nu mai e nevoie să se modifice aici).
   const KNOCKOUT_R32_FALLBACK_KICKOFF = '2026-06-28T22:00:00'
-  const roundOf16Matches = sortedMatches.filter(m => m.group === '1/16-finale' && m.homef && m.awayf)
+  const roundOf16Matches = sortedMatches.filter(m => m.group === 'Round of 32' && m.homef && m.awayf)
   const firstR16Match = roundOf16Matches.length
     ? roundOf16Matches.reduce((earliest, m) => new Date(m.kickoff) < new Date(earliest.kickoff) ? m : earliest, roundOf16Matches[0])
     : null
@@ -876,12 +876,15 @@ export default function App() {
               </div>
             ))}
 
-            {Object.entries(knockoutByPhase).map(([phase, phaseMatches]) => (
-              <div key={phase} style={{ marginBottom: 26 }}>
-                <div style={S.phaseLabel}><span style={S.phaseLabelLine} />{phase.toUpperCase()}<span style={S.phaseLabelLine} /></div>
-                {phaseMatches.map(m => {
-                  const pred    = localPreds[m.id] || { home: '', away: '' }
-                  const res     = results[m.id]
+            {Object.keys(knockoutByPhase).length > 0 && (
+              <>
+                <h2 style={{ ...S.pageTitle, color: T.text, marginTop: 8 }}>Knockout</h2>
+                {Object.entries(knockoutByPhase).map(([phase, phaseMatches]) => (
+                  <div key={phase} style={{ marginBottom: 26 }}>
+                    <h3 style={S.phaseLabel}><span style={S.phaseLabelLine} />{phase.toUpperCase()}<span style={S.phaseLabelLine} /></h3>
+                    {phaseMatches.map(m => {
+                      const pred    = localPreds[m.id] || { home: '', away: '' }
+                      const res     = results[m.id]
                   const locked  = isLocked(m.kickoff)
                   const hasPred = pred.home !== '' && pred.away !== ''
                   const hasRes  = res && res.home !== '' && res.away !== ''
@@ -952,6 +955,8 @@ export default function App() {
                 })}
               </div>
             ))}
+              </>
+            )}
 
             <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 32 }}>
               <button style={S.btnPrimary} onClick={savePredictions} disabled={saving}>
@@ -1518,12 +1523,12 @@ export default function App() {
                 <div style={S.adminMatchCard}>
                   <select style={{ ...S.selectInput, ...T.input, width: '100%', marginBottom: 10 }}
                     value={newKO.group} onChange={e => setNewKO(prev => ({ ...prev, group: e.target.value }))}>
-                    <option value="1/16-finale">1/16-finale</option>
-                    <option value="Optimi">Optimi</option>
-                    <option value="Sferturi">Sferturi</option>
-                    <option value="Semifinale">Semifinale</option>
-                    <option value="Finală mică">Finală mică</option>
-                    <option value="Finală mare">Finală mare</option>
+                    <option value="Round of 32">Round of 32</option>
+                    <option value="Round of 16">Round of 16</option>
+                    <option value="Quarter-final">Quarter-final</option>
+                    <option value="Semi-final">Semi-final</option>
+                    <option value="Third-place playoff">Third-place playoff</option>
+                    <option value="Final">Final</option>
                   </select>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
@@ -1541,8 +1546,39 @@ export default function App() {
                       </select>
                     </div>
                   </div>
-                  <input style={{ ...S.input, ...T.input, marginBottom: 10 }} type="datetime-local"
-                    value={newKO.kickoff} onChange={e => setNewKO(prev => ({ ...prev, kickoff: e.target.value }))} />
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <input style={{ ...S.input, ...T.input, flex: 2, minWidth: 130, marginBottom: 0 }} type="date"
+                      value={newKO.kickoff ? newKO.kickoff.slice(0, 10) : ''}
+                      onChange={e => {
+                        const datePart = e.target.value
+                        const timePart = newKO.kickoff ? newKO.kickoff.slice(11, 16) : '22:00'
+                        setNewKO(prev => ({ ...prev, kickoff: datePart ? `${datePart}T${timePart}` : '' }))
+                      }} />
+                    <select style={{ ...S.selectInput, ...T.input, flex: 1, minWidth: 70 }}
+                      value={newKO.kickoff ? newKO.kickoff.slice(11, 13) : '22'}
+                      onChange={e => {
+                        const datePart = newKO.kickoff ? newKO.kickoff.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                        const minutePart = newKO.kickoff ? newKO.kickoff.slice(14, 16) : '00'
+                        setNewKO(prev => ({ ...prev, kickoff: `${datePart}T${e.target.value}:${minutePart}` }))
+                      }}>
+                      {Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')).map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <span style={{ alignSelf: 'center', color: T.textSub, fontWeight: 700 }}>:</span>
+                    <select style={{ ...S.selectInput, ...T.input, flex: 1, minWidth: 70 }}
+                      value={newKO.kickoff ? newKO.kickoff.slice(14, 16) : '00'}
+                      onChange={e => {
+                        const datePart = newKO.kickoff ? newKO.kickoff.slice(0, 10) : new Date().toISOString().slice(0, 10)
+                        const hourPart = newKO.kickoff ? newKO.kickoff.slice(11, 13) : '22'
+                        setNewKO(prev => ({ ...prev, kickoff: `${datePart}T${hourPart}:${e.target.value}` }))
+                      }}>
+                      {['00', '15', '30', '45'].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ fontSize: 11, color: T.textSub, marginBottom: 10, opacity: 0.75 }}>
+                    Oră românească (24h), ex: 22:00 = 10 seara
+                  </div>
                   <div style={{ textAlign: 'center' }}>
                     <button style={S.btnAdminSave} onClick={addKnockoutMatch} disabled={savingKO}>
                       {savingKO ? 'Se adaugă...' : 'Adaugă meciul'}
