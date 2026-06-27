@@ -94,6 +94,9 @@ export default function App() {
   const [results, setResults]     = useState({})           // { matchId: {home,away} }
   const [specialPreds, setSpecialPreds]     = useState({}) // { name: { finalists: [a,b], finalScore: {home,away} } }
   const [specialResults, setSpecialResults] = useState({}) // { finalists: [a,b] }
+  const [knockoutMatches, setKnockoutMatches] = useState({}) // { matchId: { id, group, home, homef, away, awayf, date, kickoff } }
+  const [newKO, setNewKO] = useState({ group: '1/16-finale', home: '', away: '', kickoff: '' })
+  const [savingKO, setSavingKO] = useState(false)
 
   const [localPreds, setLocalPreds] = useState({})         // buffer local înainte de save
   const [localResults, setLocalResults] = useState({})
@@ -132,6 +135,11 @@ export default function App() {
       @keyframes wcPrizePulse { 0%,100% { transform: scale(1); text-shadow: 0 0 24px rgba(212,175,55,0.5); } 50% { transform: scale(1.045); text-shadow: 0 0 44px rgba(244,196,48,0.85), 0 0 80px rgba(212,175,55,0.3); } }
       @keyframes wcShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
       @keyframes wcGlow { 0%,100% { box-shadow: 0 0 18px rgba(212,175,55,0.18), inset 0 0 18px rgba(212,175,55,0.04); } 50% { box-shadow: 0 0 38px rgba(212,175,55,0.38), inset 0 0 28px rgba(212,175,55,0.09); } }
+      @keyframes wcPrizePop { 0% { opacity: 0; transform: translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateY(-2px) scale(1.12); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes wcPrizeFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+      @media (prefers-reduced-motion: reduce) {
+        .wc-prize-pop { animation: none !important; }
+      }
       @media (prefers-reduced-motion: reduce) {
         .wc-pulse-dot { animation: none !important; }
         .wc-rise { animation: none !important; }
@@ -165,6 +173,9 @@ export default function App() {
     const unsubSpecialRes = onValue(ref(db, 'specialResults'), snap => {
       setSpecialResults(snap.val() || {})
     })
+    const unsubKO = onValue(ref(db, 'knockoutMatches'), snap => {
+      setKnockoutMatches(snap.val() || {})
+    })
     const unsubChat = onValue(ref(db, 'chat'), snap => {
       const val = snap.val() || {}
       const msgs = Object.entries(val)
@@ -173,7 +184,7 @@ export default function App() {
         .slice(-200)
       setMessages(msgs)
     })
-    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes(); unsubChat() }
+    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes(); unsubKO(); unsubChat() }
   }, [])
 
   // Sync local predictions when user logs in or remote changes
@@ -388,12 +399,60 @@ export default function App() {
     }
   }
 
+  // ─── MECIURI ELIMINATORII (adăugate de admin) ───────────────────────────
+
+  const addKnockoutMatch = async () => {
+    if (!newKO.home || !newKO.away || !newKO.kickoff) {
+      showToast('Completează ambele echipe și data/ora.', 'err')
+      return
+    }
+    if (newKO.home === newKO.away) {
+      showToast('Cele 2 echipe trebuie să fie diferite.', 'err')
+      return
+    }
+    setSavingKO(true)
+    try {
+      const existingIds = [...MATCHES.map(m => m.id), ...Object.values(knockoutMatches).map(m => m.id)]
+      const nextId = existingIds.length ? Math.max(...existingIds) + 1 : 64
+      const kickoffDate = new Date(newKO.kickoff)
+      const dateLabel = kickoffDate.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' }).replace('.', '')
+      const match = {
+        id: nextId,
+        group: newKO.group,
+        home: newKO.home,
+        homef: teamFlagMap[newKO.home] || '',
+        away: newKO.away,
+        awayf: teamFlagMap[newKO.away] || '',
+        date: dateLabel,
+        kickoff: newKO.kickoff,
+      }
+      await set(ref(db, `knockoutMatches/${nextId}`), match)
+      setNewKO({ group: newKO.group, home: '', away: '', kickoff: '' })
+      showToast('Meci adăugat! ✅')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+    setSavingKO(false)
+  }
+
+  const deleteKnockoutMatch = async (id) => {
+    try {
+      await set(ref(db, `knockoutMatches/${id}`), null)
+      showToast('Meci șters.')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+  }
+
   // ─── CLASAMENT ───────────────────────────────────────────────────────────
+
+  // Combinăm meciurile statice de grupă (matches.js) cu cele eliminatorii adăugate de admin (Firebase)
+  const allMatches = [...MATCHES, ...Object.values(knockoutMatches)]
 
   const leaderboard = Object.keys(users).map(name => {
     let total = 0
     let exact = 0
-    MATCHES.forEach(m => {
+    allMatches.forEach(m => {
       const pred = predictions[name]?.[m.id]
       if (!pred || pred.home === '' || pred.away === '') return
       const res = results[m.id]
@@ -433,7 +492,7 @@ export default function App() {
 
   // ─── MECIURI SORTATE ─────────────────────────────────────────────────────
 
-  const sortedMatches = [...MATCHES].sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+  const sortedMatches = [...allMatches].sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
 
   const matchesByDay = sortedMatches.reduce((acc, m) => {
     if (!acc[m.date]) acc[m.date] = []
@@ -447,11 +506,19 @@ export default function App() {
     !m.kickoff || Date.now() < new Date(m.kickoff).getTime() + TWENTY_FOUR_H
   )
 
-  // Doar meciurile din faza grupelor vizibile
+  // Meciurile din faza grupelor (statice) + meciurile eliminatorii adăugate de admin, ambele vizibile
   const groupMatches = sortedMatches.filter(m => m.group.startsWith('Grupa'))
+  const knockoutMatchesList = sortedMatches.filter(m => !m.group.startsWith('Grupa'))
   const groupMatchesByDay = visibleMatches.filter(m => m.group.startsWith('Grupa')).reduce((acc, m) => {
     if (!acc[m.date]) acc[m.date] = []
     acc[m.date].push(m)
+    return acc
+  }, {})
+  // Meciuri eliminatorii vizibile, grupate pe fază (în ordinea în care apar cronologic)
+  const visibleKnockoutMatches = visibleMatches.filter(m => !m.group.startsWith('Grupa'))
+  const knockoutByPhase = visibleKnockoutMatches.reduce((acc, m) => {
+    if (!acc[m.group]) acc[m.group] = []
+    acc[m.group].push(m)
     return acc
   }, {})
 
@@ -472,7 +539,7 @@ export default function App() {
   // deci folosim temporar data confirmată manual. Când se adaugă meciul real cu echipe
   // în matches.js, codul de mai jos îl preferă automat pe acesta (nu mai e nevoie să se modifice aici).
   const KNOCKOUT_R32_FALLBACK_KICKOFF = '2026-06-28T22:00:00'
-  const roundOf16Matches = sortedMatches.filter(m => m.group === '16-imi' && m.homef && m.awayf)
+  const roundOf16Matches = sortedMatches.filter(m => m.group === '1/16-finale' && m.homef && m.awayf)
   const firstR16Match = roundOf16Matches.length
     ? roundOf16Matches.reduce((earliest, m) => new Date(m.kickoff) < new Date(earliest.kickoff) ? m : earliest, roundOf16Matches[0])
     : null
@@ -758,6 +825,83 @@ export default function App() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
                           <span style={{ ...S.matchMeta, color: T.textMeta }}>
                             {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span>
+                          </span>
+                          {locked
+                            ? <span style={S.lockBadge}>Blocat</span>
+                            : minsLeft !== null && minsLeft <= 120
+                              ? <span className="wc-pulse-dot" style={S.timerBadge}><span style={{...S.liveDot, animation: 'wcPulse 1.6s ease-in-out infinite'}} />{minsLeft} min</span>
+                              : null
+                          }
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Flag code={m.homef} /> {m.home}
+                          </span>
+                          <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
+                            {locked
+                              ? <>
+                                  <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home !== '' ? pred.home : '–'}</div>
+                                  <span style={S.colon}>:</span>
+                                  <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away !== '' ? pred.away : '–'}</div>
+                                </>
+                              : <>
+                                  <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
+                                    value={pred.home} placeholder="–"
+                                    onChange={e => updateLocalPred(m.id, 'home', e.target.value)} />
+                                  <span style={S.colon}>:</span>
+                                  <input style={{ ...S.scoreInput, ...T.scoreInput }} type="number" min="0" max="20"
+                                    value={pred.away} placeholder="–"
+                                    onChange={e => updateLocalPred(m.id, 'away', e.target.value)} />
+                                </>
+                            }
+                          </div>
+                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                            {m.away} <Flag code={m.awayf} />
+                          </span>
+                        </div>
+                        {hasRes && (
+                          <div style={{ ...S.resultRow, ...T.resultRow }}>
+                            Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
+                            {pts !== null && (
+                              <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
+                                +{pts}p
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
+
+            {Object.entries(knockoutByPhase).map(([phase, phaseMatches]) => (
+              <div key={phase} style={{ marginBottom: 26 }}>
+                <div style={S.phaseLabel}><span style={S.phaseLabelLine} />{phase.toUpperCase()}<span style={S.phaseLabelLine} /></div>
+                {phaseMatches.map(m => {
+                  const pred    = localPreds[m.id] || { home: '', away: '' }
+                  const res     = results[m.id]
+                  const locked  = isLocked(m.kickoff)
+                  const hasPred = pred.home !== '' && pred.away !== ''
+                  const hasRes  = res && res.home !== '' && res.away !== ''
+                  const pts     = hasPred && hasRes ? calcScore(pred, res) : null
+                  const minsLeft = m.kickoff ? Math.max(0, Math.ceil((new Date(m.kickoff) - now) / 60000)) : null
+
+                  let cardStyle = { ...S.matchCard, ...T.matchCard }
+                  let stripeStyle = S.cardStripeDefault
+                  if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
+                  else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
+                  else if (pts === 2) { cardStyle = { ...cardStyle, ...S.cardGreen }; stripeStyle = S.cardStripeGreen }
+                  else if (locked && !hasRes) { cardStyle = { ...cardStyle, ...S.cardLocked }; stripeStyle = S.cardStripeLocked }
+
+                  return (
+                    <div key={m.id} style={cardStyle}>
+                      <div style={stripeStyle} />
+                      <div style={S.matchCardBody}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                          <span style={{ ...S.matchMeta, color: T.textMeta }}>
+                            {m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span>
                           </span>
                           {locked
                             ? <span style={S.lockBadge}>Blocat</span>
@@ -1201,9 +1345,31 @@ export default function App() {
                               </div>
                               <div style={{
                                 fontFamily: "'Oswald',sans-serif", fontSize: isGold ? 18 : 15,
-                                fontWeight: 700, color: T.gold, marginBottom: 6,
+                                fontWeight: 700, color: T.gold, marginBottom: 4,
                               }}>
                                 {u.total}<small style={{ fontSize: 10, fontWeight: 400, marginLeft: 2, opacity: 0.7 }}>p</small>
+                              </div>
+                              {/* Premiu fix RON */}
+                              <div className="wc-prize-pop" style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 3,
+                                padding: isGold ? '3px 10px' : '2px 8px',
+                                borderRadius: 20,
+                                marginBottom: 8,
+                                background: isGold
+                                  ? 'linear-gradient(135deg, #fff5b0, #f0c419 55%, #c89a2e)'
+                                  : isSilver
+                                    ? 'linear-gradient(135deg, #f3f5f4, #cfd6d3 55%, #aab2af)'
+                                    : 'linear-gradient(135deg, #f0c79a, #dba36e 55%, #a06a3e)',
+                                boxShadow: isGold ? '0 2px 10px rgba(212,175,55,0.45)' : '0 2px 6px rgba(0,0,0,0.2)',
+                                animation: `wcPrizePop 0.5s cubic-bezier(0.22,1,0.36,1) ${0.15 + displayIdx * 0.12}s both, wcPrizeFloat 2.6s ease-in-out ${0.7 + displayIdx * 0.12}s infinite`,
+                              }}>
+                                <span style={{ fontSize: isGold ? 12.5 : 11 }}>💰</span>
+                                <span style={{
+                                  fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+                                  fontSize: isGold ? 13 : 11.5, color: '#1a1208',
+                                }}>
+                                  {isGold ? 400 : isSilver ? 200 : 100} RON
+                                </span>
                               </div>
                               {/* Platform / step */}
                               <div style={{
@@ -1281,7 +1447,12 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedMatches.map(m => {
+                  {sortedMatches.filter(m =>
+                    Object.keys(users).some(u => {
+                      const p = predictions[u]?.[m.id]
+                      return p && p.home !== '' && p.away !== ''
+                    })
+                  ).map(m => {
                     const locked = isLocked(m.kickoff)
                     const res = results[m.id]
                     const hasRes = res && res.home !== '' && res.away !== ''
@@ -1341,6 +1512,58 @@ export default function App() {
                 <button style={S.btnPrimary} onClick={handleAdminLogin}>Intră ca Admin</button>
               </div>
             ) : (
+              <div>
+                <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Adaugă meci eliminatoriu<span style={S.dayLabelLine} /></div>
+                <div style={S.adminMatchCard}>
+                  <select style={{ ...S.selectInput, ...T.input, width: '100%', marginBottom: 10 }}
+                    value={newKO.group} onChange={e => setNewKO(prev => ({ ...prev, group: e.target.value }))}>
+                    <option value="1/16-finale">1/16-finale</option>
+                    <option value="Optimi">Optimi</option>
+                    <option value="Sferturi">Sferturi</option>
+                    <option value="Semifinale">Semifinale</option>
+                    <option value="Finală mică">Finală mică</option>
+                    <option value="Finală mare">Finală mare</option>
+                  </select>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                      <Flag code={teamFlagMap[newKO.home]} />
+                      <select style={{ ...S.selectInput, ...T.input }} value={newKO.home} onChange={e => setNewKO(prev => ({ ...prev, home: e.target.value }))}>
+                        <option value="">Echipa gazdă...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === newKO.away}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 150 }}>
+                      <Flag code={teamFlagMap[newKO.away]} />
+                      <select style={{ ...S.selectInput, ...T.input }} value={newKO.away} onChange={e => setNewKO(prev => ({ ...prev, away: e.target.value }))}>
+                        <option value="">Echipa oaspete...</option>
+                        {allTeams.map(t => <option key={t} value={t} disabled={t === newKO.home}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <input style={{ ...S.input, ...T.input, marginBottom: 10 }} type="datetime-local"
+                    value={newKO.kickoff} onChange={e => setNewKO(prev => ({ ...prev, kickoff: e.target.value }))} />
+                  <div style={{ textAlign: 'center' }}>
+                    <button style={S.btnAdminSave} onClick={addKnockoutMatch} disabled={savingKO}>
+                      {savingKO ? 'Se adaugă...' : 'Adaugă meciul'}
+                    </button>
+                  </div>
+                </div>
+
+                {knockoutMatchesList.length > 0 && (
+                  <div style={{ marginTop: 14 }}>
+                    {knockoutMatchesList.map(m => (
+                      <div key={m.id} style={{ ...S.adminMatchCard, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                        <span style={{ fontSize: 12.5, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Flag code={m.homef} size={14} /> {m.home} <span style={S.tdVs}>vs</span> {m.away} <Flag code={m.awayf} size={14} />
+                          <span style={{ opacity: 0.7, marginLeft: 6 }}>· {m.group} · {m.date} {fmtHour(m.kickoff)}</span>
+                        </span>
+                        <button style={{ ...S.btnGhost, flexShrink: 0 }} onClick={() => deleteKnockoutMatch(m.id)}>Șterge</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
@@ -1691,6 +1914,8 @@ const S = {
   // ── Day label ──
   dayLabel: { fontFamily: "'Oswald',sans-serif", display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, fontWeight: 500, letterSpacing: 2.5, color: '#f0b429', textTransform: 'uppercase', marginBottom: 10 },
   dayLabelLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)' },
+  phaseLabel: { fontFamily: "'Oswald',sans-serif", display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, fontWeight: 700, letterSpacing: 3, color: '#1a1208', textTransform: 'uppercase', margin: '4px 0 14px', padding: '8px 4px', background: 'linear-gradient(90deg, transparent, #f0c419 15%, #f0c419 85%, transparent)' },
+  phaseLabelLine: { flex: 1, height: 1.5, background: 'rgba(26,18,8,0.35)' },
 
   // ── Match card (scoreboard) ──
   matchCard: { position: 'relative', display: 'flex', background: '#1e1e24', border: '1px solid rgba(245,241,232,0.06)', borderRadius: 16, marginBottom: 8, overflow: 'hidden' },
