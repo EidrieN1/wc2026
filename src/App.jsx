@@ -1513,6 +1513,7 @@ export default function App() {
               </div>
             ) : (
               <div>
+                <div>
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Adaugă meci eliminatoriu<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
                   <select style={{ ...S.selectInput, ...T.input, width: '100%', marginBottom: 10 }}
@@ -1562,7 +1563,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-              </div>
+                </div>
 
               <div>
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
@@ -1634,6 +1635,7 @@ export default function App() {
                     Salvează toate rezultatele
                   </button>
                 </div>
+              </div>
               </div>
             )}
           </div>
