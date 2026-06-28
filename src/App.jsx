@@ -447,7 +447,13 @@ export default function App() {
   // ─── CLASAMENT ───────────────────────────────────────────────────────────
 
   // Combinăm meciurile statice de grupă (matches.js) cu cele eliminatorii adăugate de admin (Firebase)
-  const allMatches = [...MATCHES, ...Object.values(knockoutMatches)]
+  // Combinăm meciurile statice de grupă (matches.js) cu cele eliminatorii adăugate de admin (Firebase).
+  // Placeholder-ele eliminatorii din matches.js (fără echipe reale, homef/awayf goale) sunt ignorate complet —
+  // fazele eliminatorii apar DOAR când admin le adaugă manual prin formular, cu echipe reale.
+  const allMatches = [
+    ...MATCHES.filter(m => m.group.startsWith('Grupa') || (m.homef && m.awayf)),
+    ...Object.values(knockoutMatches),
+  ]
 
   const leaderboard = Object.keys(users).map(name => {
     let total = 0
