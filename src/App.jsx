@@ -836,7 +836,7 @@ export default function App() {
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtGreen}>2p</b> câștigător corect</span>
               <div style={{ marginTop: 6, opacity: 0.8 }}>Pronosticurile se blochează automat cu 5 minute înainte de fiecare meci.</div>
-              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de  prelungiri sau penalty-uri.</div>
             </div>
 
             {Object.entries(groupMatchesByDay).map(([day, dayMatches]) => (
@@ -1021,7 +1021,7 @@ export default function App() {
               <div style={{ marginTop: 6, opacity: 0.8 }}>
                 Se blochează la începutul primului meci din 16-imi ({new Date(specialLockKickoff).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })}, {fmtHour(specialLockKickoff)}).
               </div>
-              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de prelungiri sau penalty-uri.</div>
             </div>
 
             <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Cine joacă finala<span style={S.dayLabelLine} /></div>
@@ -1178,7 +1178,7 @@ export default function App() {
             <h2 style={{ ...S.pageTitle, color: T.text }}>Pool-ul meu</h2>
             <div style={{ ...S.infoBox, ...T.infoBox }}>
               Aici vezi doar meciurile la care ai pus deja un pronostic.
-              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără prelungiri sau penalty-uri.</div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de prelungiri sau penalty-uri.</div>
             </div>
 
             <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
