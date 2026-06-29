@@ -26,6 +26,12 @@ function isLocked(kickoff) {
   return Date.now() >= new Date(kickoff).getTime() - 5 * 60 * 1000
 }
 
+// Combină blocarea automată (bazată pe oră) cu o eventuală deblocare manuală forțată de admin
+function isMatchLocked(kickoff, matchId, overrides) {
+  if (overrides && overrides[matchId]) return false // admin a forțat deblocarea acestui meci
+  return isLocked(kickoff)
+}
+
 // Calculează punctajul pentru pronosticul de finaliști: 20p ambele corecte, 10p doar una, 0p niciuna
 function calcFinalistsScore(picked, actual) {
   if (!picked || !actual) return null
@@ -97,6 +103,8 @@ export default function App() {
   const [knockoutMatches, setKnockoutMatches] = useState({}) // { matchId: { id, group, home, homef, away, awayf, date, kickoff } }
   const [newKO, setNewKO] = useState({ group: 'Round of 32', home: '', away: '', kickoff: '' })
   const [savingKO, setSavingKO] = useState(false)
+  const [matchOverrides, setMatchOverrides] = useState({}) // { matchId: true } — meciuri forțat deblocate manual de admin
+  const [specialUnlockOverride, setSpecialUnlockOverride] = useState(false) // forțează deblocarea pronosticurilor Speciale
 
   const [localPreds, setLocalPreds] = useState({})         // buffer local înainte de save
   const [localResults, setLocalResults] = useState({})
@@ -176,6 +184,12 @@ export default function App() {
     const unsubKO = onValue(ref(db, 'knockoutMatches'), snap => {
       setKnockoutMatches(snap.val() || {})
     })
+    const unsubOverrides = onValue(ref(db, 'matchOverrides'), snap => {
+      setMatchOverrides(snap.val() || {})
+    })
+    const unsubSpecialUnlock = onValue(ref(db, 'specialUnlockOverride'), snap => {
+      setSpecialUnlockOverride(!!snap.val())
+    })
     const unsubChat = onValue(ref(db, 'chat'), snap => {
       const val = snap.val() || {}
       const msgs = Object.entries(val)
@@ -184,7 +198,7 @@ export default function App() {
         .slice(-200)
       setMessages(msgs)
     })
-    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes(); unsubKO(); unsubChat() }
+    return () => { unsubUsers(); unsubPreds(); unsubRes(); unsubSpecialPreds(); unsubSpecialRes(); unsubKO(); unsubOverrides(); unsubSpecialUnlock(); unsubChat() }
   }, [])
 
   // Sync local predictions when user logs in or remote changes
@@ -444,6 +458,26 @@ export default function App() {
     }
   }
 
+  // ─── BLOCARE / DEBLOCARE MANUALĂ (override admin) ───────────────────────
+
+  const toggleMatchOverride = async (matchId, currentlyForced) => {
+    try {
+      await set(ref(db, `matchOverrides/${matchId}`), currentlyForced ? null : true)
+      showToast(currentlyForced ? 'Meci readus la blocare automată.' : 'Meci deblocat manual! ✅')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+  }
+
+  const toggleSpecialUnlock = async () => {
+    try {
+      await set(ref(db, 'specialUnlockOverride'), specialUnlockOverride ? null : true)
+      showToast(specialUnlockOverride ? 'Speciale readuse la blocare automată.' : 'Speciale deblocate manual! ✅')
+    } catch (e) {
+      showToast('Eroare: ' + e.message, 'err')
+    }
+  }
+
   // ─── CLASAMENT ───────────────────────────────────────────────────────────
 
   // Combinăm meciurile statice de grupă (matches.js) cu cele eliminatorii adăugate de admin (Firebase)
@@ -544,13 +578,13 @@ export default function App() {
   // matches.js nu are încă echipele reale pentru această fază (sunt placeholder),
   // deci folosim temporar data confirmată manual. Când se adaugă meciul real cu echipe
   // în matches.js, codul de mai jos îl preferă automat pe acesta (nu mai e nevoie să se modifice aici).
-  const KNOCKOUT_R32_FALLBACK_KICKOFF = '2026-06-28T22:00:00'
+  const KNOCKOUT_R32_FALLBACK_KICKOFF = '2026-06-30T08:00:00'
   const roundOf16Matches = sortedMatches.filter(m => m.group === 'Round of 32' && m.homef && m.awayf)
   const firstR16Match = roundOf16Matches.length
     ? roundOf16Matches.reduce((earliest, m) => new Date(m.kickoff) < new Date(earliest.kickoff) ? m : earliest, roundOf16Matches[0])
     : null
   const specialLockKickoff = firstR16Match?.kickoff || KNOCKOUT_R32_FALLBACK_KICKOFF
-  const specialLocked = isLocked(specialLockKickoff)
+  const specialLocked = !specialUnlockOverride && isLocked(specialLockKickoff)
   const myFinalists = localSpecial.finalists
   const myFinalScore = localSpecial.finalScore
 
@@ -811,7 +845,7 @@ export default function App() {
                 {dayMatches.map(m => {
                   const pred    = localPreds[m.id] || { home: '', away: '' }
                   const res     = results[m.id]
-                  const locked  = isLocked(m.kickoff)
+                  const locked  = isMatchLocked(m.kickoff, m.id, matchOverrides)
                   const hasPred = pred.home !== '' && pred.away !== ''
                   const hasRes  = res && res.home !== '' && res.away !== ''
                   const pts     = hasPred && hasRes ? calcScore(pred, res) : null
@@ -891,7 +925,7 @@ export default function App() {
                     {phaseMatches.map(m => {
                       const pred    = localPreds[m.id] || { home: '', away: '' }
                       const res     = results[m.id]
-                  const locked  = isLocked(m.kickoff)
+                  const locked  = isMatchLocked(m.kickoff, m.id, matchOverrides)
                   const hasPred = pred.home !== '' && pred.away !== ''
                   const hasRes  = res && res.home !== '' && res.away !== ''
                   const pts     = hasPred && hasRes ? calcScore(pred, res) : null
@@ -1198,7 +1232,7 @@ export default function App() {
                 <>
                   {myUpcomingMatches.map(m => {
                     const pred = localPreds[m.id] || { home: '', away: '' }
-                    const locked = isLocked(m.kickoff)
+                    const locked = isMatchLocked(m.kickoff, m.id, matchOverrides)
                     return (
                       <div key={m.id} style={{ ...S.matchCard, ...T.matchCard, ...(locked ? S.cardLocked : {}) }}>
                         <div style={locked ? S.cardStripeLocked : S.cardStripeDefault} />
@@ -1464,7 +1498,7 @@ export default function App() {
                       return p && p.home !== '' && p.away !== ''
                     })
                   ).map(m => {
-                    const locked = isLocked(m.kickoff)
+                    const locked = isMatchLocked(m.kickoff, m.id, matchOverrides)
                     const res = results[m.id]
                     const hasRes = res && res.home !== '' && res.away !== ''
                     return (
@@ -1608,6 +1642,21 @@ export default function App() {
                 </div>
 
               <div>
+                <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Blocare pronosticuri Speciale<span style={S.dayLabelLine} /></div>
+                <div style={{ ...S.adminMatchCard, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12.5, color: T.teamName }}>
+                    {specialUnlockOverride
+                      ? <>Deblocate manual <span style={S.unlockBadge}>activ</span></>
+                      : <>Blocare automată {specialLocked ? '(momentan blocate)' : '(momentan deschise)'}</>
+                    }
+                  </span>
+                  <button style={S.btnTinyToggle} onClick={toggleSpecialUnlock}>
+                    {specialUnlockOverride ? 'Revino la automat' : 'Deblochează manual'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Finaliști și campioană (pronosticuri speciale)<span style={S.dayLabelLine} /></div>
                 <div style={S.adminMatchCard}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1646,9 +1695,15 @@ export default function App() {
                       const res = localResults[m.id] || { home: '', away: '' }
                       return (
                         <div key={m.id} style={S.adminMatchCard}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
                             <span style={{ ...S.matchMeta, color: T.textMeta }}>{fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
-                            {isLocked(m.kickoff) && <span style={S.lockBadge}>Blocat</span>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {isLocked(m.kickoff) && !matchOverrides[m.id] && <span style={S.lockBadge}>Blocat</span>}
+                              {matchOverrides[m.id] && <span style={S.unlockBadge}>Deblocat manual</span>}
+                              <button style={S.btnTinyToggle} onClick={() => toggleMatchOverride(m.id, !!matchOverrides[m.id])}>
+                                {matchOverrides[m.id] ? 'Revino la automat' : 'Deblochează manual'}
+                              </button>
+                            </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ ...S.teamName, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1997,6 +2052,8 @@ const S = {
   ptsBadgeZero:  { color: '#cdd0d6', background: 'rgba(245,241,232,0.1)' },
 
   lockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#e0717c', background: 'rgba(224,113,124,0.12)', border: '1px solid rgba(224,113,124,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
+  unlockBadge: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#52b788', background: 'rgba(82,183,136,0.12)', border: '1px solid rgba(82,183,136,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
+  btnTinyToggle: { fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.35)', padding: '5px 11px', borderRadius: 8, cursor: 'pointer', letterSpacing: 0.5, whiteSpace: 'nowrap', flexShrink: 0 },
   timerBadge: { display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Oswald',sans-serif", fontSize: 10.5, fontWeight: 600, color: '#f0b429', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', padding: '2px 9px', borderRadius: 8, letterSpacing: 0.5 },
   liveDot: { width: 6, height: 6, borderRadius: '50%', background: '#f0b429', display: 'inline-block' },
 
