@@ -143,6 +143,10 @@ export default function App() {
       @keyframes wcPrizePulse { 0%,100% { transform: scale(1); text-shadow: 0 0 24px rgba(212,175,55,0.5); } 50% { transform: scale(1.045); text-shadow: 0 0 44px rgba(244,196,48,0.85), 0 0 80px rgba(212,175,55,0.3); } }
       @keyframes wcShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
       @keyframes wcGlow { 0%,100% { box-shadow: 0 0 18px rgba(212,175,55,0.18), inset 0 0 18px rgba(212,175,55,0.04); } 50% { box-shadow: 0 0 38px rgba(212,175,55,0.38), inset 0 0 28px rgba(212,175,55,0.09); } }
+      @keyframes wcGlowRed { 0%,100% { box-shadow: 0 0 14px rgba(224,71,71,0.18); } 50% { box-shadow: 0 0 32px rgba(224,71,71,0.42); } }
+      @media (prefers-reduced-motion: reduce) {
+        .wc-reminder-urgent { animation: none !important; }
+      }
       @keyframes wcPrizePop { 0% { opacity: 0; transform: translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateY(-2px) scale(1.12); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes wcPrizeFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
       @media (prefers-reduced-motion: reduce) {
@@ -607,6 +611,24 @@ export default function App() {
     return !(res && res.home !== '' && res.away !== '')
   })
 
+  // ─── ATENȚIONĂRI: meciuri fără pronostic care încep în curând ──────────
+
+  const ONE_HOUR = 60 * 60 * 1000
+  const TWELVE_HOURS = 12 * ONE_HOUR
+  const myMissingPredictionMatches = currentUser
+    ? sortedMatches.filter(m => {
+        if (!m.kickoff) return false
+        if (isMatchLocked(m.kickoff, m.id, matchOverrides)) return false // deja blocat, nu mai are rost să avertizăm
+        const msUntil = new Date(m.kickoff).getTime() - now
+        if (msUntil < 0 || msUntil > TWELVE_HOURS) return false
+        const p = predictions[currentUser.name]?.[m.id]
+        return !p || p.home === '' || p.away === ''
+      }).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    : []
+
+  const myUrgentMatches = myMissingPredictionMatches.filter(m => new Date(m.kickoff).getTime() - now <= ONE_HOUR)
+  const myReminderMatches = myMissingPredictionMatches.filter(m => new Date(m.kickoff).getTime() - now > ONE_HOUR)
+
   // ─── CHAT ────────────────────────────────────────────────────────────────
   const unread = messages.filter(m => m.ts > lastSeenTs && m.user !== currentUser?.name).length
 
@@ -725,8 +747,13 @@ export default function App() {
               ['leaderboard','Clasament'],
               ['admin','Admin']
             ].map(([k,l]) => (
-              <button key={k} style={{ ...S.navBtn, color: view===k ? T.gold : T.textSub, borderBottom: view===k ? `2px solid ${T.gold}` : '2px solid transparent' }}
-                onClick={() => goTo(k)}>{l}</button>
+              <button key={k} style={{ ...S.navBtn, position: 'relative', color: view===k ? T.gold : T.textSub, borderBottom: view===k ? `2px solid ${T.gold}` : '2px solid transparent' }}
+                onClick={() => goTo(k)}>
+                {l}
+                {k === 'predict' && myMissingPredictionMatches.length > 0 && (
+                  <span className="wc-badge-pulse" style={{ ...S.navBadge, animation: 'wcBadgePulse 1.3s ease-in-out infinite' }}>{myMissingPredictionMatches.length}</span>
+                )}
+              </button>
             ))}
 
           </nav>
@@ -822,6 +849,39 @@ export default function App() {
         {/* ════ PRONOSTICURI ════ */}
         {view === 'predict' && currentUser && (
           <div>
+            {/* ── Atenționare: meciuri fără pronostic care încep în curând ── */}
+            {myUrgentMatches.length > 0 && (
+              <div className="wc-reminder-urgent" style={{ ...S.reminderUrgent, animation: 'wcGlowRed 1.8s ease-in-out infinite' }}>
+                <span style={S.reminderIcon}>⏰</span>
+                <div style={{ flex: 1 }}>
+                  <div style={S.reminderTitleUrgent}>Ultima șansă! Pune pronosticul acum</div>
+                  <div style={S.reminderList}>
+                    {myUrgentMatches.map(m => {
+                      const minsLeft = Math.max(0, Math.round((new Date(m.kickoff).getTime() - now) / 60000))
+                      return <div key={m.id}>{m.home} – {m.away} <b>· începe în {minsLeft} min</b></div>
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {myReminderMatches.length > 0 && (
+              <div style={{
+                ...S.reminderBase,
+                ...(myReminderMatches.some(m => (new Date(m.kickoff).getTime() - now) <= 3 * 60 * 60 * 1000) ? S.reminderHot : S.reminderCool),
+              }}>
+                <span style={S.reminderIcon}>🔔</span>
+                <div style={{ flex: 1 }}>
+                  <div style={S.reminderTitle}>Nu ai pus încă pronostic la:</div>
+                  <div style={S.reminderList}>
+                    {myReminderMatches.map(m => {
+                      const hoursLeft = Math.max(0, Math.round((new Date(m.kickoff).getTime() - now) / (60 * 60 * 1000)))
+                      return <div key={m.id}>{m.home} – {m.away} <b>· peste {hoursLeft}h</b></div>
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ ...S.pageTitle, color: T.text }}>Pronosticurile tale</h2>
               <button style={{ ...S.btnPrimary, width: 'auto', padding: '10px 20px', fontSize: 13 }}
@@ -836,7 +896,7 @@ export default function App() {
               <span style={S.infoDot}>·</span>
               <span style={S.infoPt}><b style={S.infoPtGreen}>2p</b> câștigător corect</span>
               <div style={{ marginTop: 6, opacity: 0.8 }}>Pronosticurile se blochează automat cu 5 minute înainte de fiecare meci.</div>
-              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de  prelungiri sau penalty-uri.</div>
+              <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de prelungiri sau penalty-uri.</div>
             </div>
 
             {Object.entries(groupMatchesByDay).map(([day, dayMatches]) => (
@@ -1979,6 +2039,16 @@ const S = {
   btnGhost: { background: 'transparent', color: '#8a8a93', border: '1px solid rgba(245,241,232,0.16)', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.4 },
   navWrap: { display: 'flex', gap: 2, padding: '0 16px 0', overflowX: 'auto' },
   navBtn: { fontFamily: "'Oswald',sans-serif", background: 'transparent', color: '#8a8a93', border: 'none', borderBottom: '2px solid transparent', padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 500, letterSpacing: 0.8, textTransform: 'uppercase', whiteSpace: 'nowrap' },
+  navBadge: {
+    position: 'absolute', top: 2, right: 0,
+    minWidth: 16, height: 16, padding: '0 4px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle at 35% 30%, #fff5b0, #f0c419 55%, #d9a30f 100%)',
+    border: '1.5px solid #17171c',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'Oswald',sans-serif", fontSize: 9.5, fontWeight: 800,
+    color: '#1a1208', lineHeight: 1,
+  },
   navActive: { color: '#f0b429', borderBottom: '2px solid #f0b429' },
 
   // ── Toast ──
@@ -2004,6 +2074,17 @@ const S = {
 
   // ── Info box ──
   infoBox: { background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.16)', borderRadius: 12, padding: '10px 16px', fontSize: 12.5, color: '#9b9ba3', marginBottom: 16, lineHeight: 1.7 },
+
+  // ── Atenționări pronostic lipsă ──
+  reminderUrgent: { display: 'flex', alignItems: 'flex-start', gap: 10, background: 'linear-gradient(135deg, rgba(224,71,71,0.16), rgba(224,71,71,0.08))', border: '1.5px solid rgba(224,71,71,0.5)', borderRadius: 12, padding: '12px 16px', marginBottom: 12, boxShadow: '0 0 18px rgba(224,71,71,0.15)' },
+  reminderBase: { display: 'flex', alignItems: 'flex-start', gap: 10, borderRadius: 12, padding: '12px 16px', marginBottom: 12 },
+  reminderHot: { background: 'linear-gradient(135deg, rgba(240,180,41,0.16), rgba(240,180,41,0.07))', border: '1.5px solid rgba(240,180,41,0.45)' },
+  reminderCool: { background: 'rgba(240,180,41,0.05)', border: '1px solid rgba(240,180,41,0.2)' },
+  reminderIcon: { fontSize: 18, flexShrink: 0, lineHeight: 1.3 },
+  reminderTitleUrgent: { fontFamily: "'Oswald',sans-serif", fontSize: 13, fontWeight: 700, color: '#e04747', letterSpacing: 0.3, marginBottom: 4, textTransform: 'uppercase' },
+  reminderTitle: { fontFamily: "'Oswald',sans-serif", fontSize: 12.5, fontWeight: 600, color: '#d4a017', letterSpacing: 0.3, marginBottom: 4 },
+  reminderList: { fontSize: 12, color: '#9b9ba3', lineHeight: 1.7 },
+
   infoPt: { color: '#9b9ba3' },
   infoPtGold: { color: '#f0b429' },
   infoPtBlue: { color: '#7fb3e0' },
