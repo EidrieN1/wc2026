@@ -67,7 +67,7 @@ function Flag({ code, size = 18 }) {
   )
 }
 
-// hash simplu pentru parolă (nu e crypto safe, dar e suficient pentru un joc între prieteni)
+// hash simplu pentru parolă (nu e crypto-safe, dar e suficient pentru un joc între prieteni)
 async function hashPass(pass) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
