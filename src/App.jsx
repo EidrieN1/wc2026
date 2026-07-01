@@ -111,6 +111,7 @@ export default function App() {
   const [localSpecial, setLocalSpecial] = useState({ finalists: ['', ''], finalScore: { home: '', away: '' }, champion: '' })
   const [localSpecialResults, setLocalSpecialResults] = useState({ finalists: ['', ''], champion: '' })
   const [savingSpecial, setSavingSpecial] = useState(false)
+  const [playedOpen, setPlayedOpen] = useState(false) // acordeon „Jucate" în Pool-ul meu, implicit închis
   const [saving, setSaving]       = useState(false)
   const [toast, setToast]         = useState(null)
   const [now, setNow]             = useState(Date.now())
@@ -1241,49 +1242,76 @@ export default function App() {
               <div style={{ marginTop: 4, opacity: 0.8, fontStyle: 'italic' }}>Scorul exact se ia în calcul doar la finalul celor 90 de minute de joc, fără reprizele de prelungiri sau penalty-uri.</div>
             </div>
 
-            <div style={{ ...S.dayLabel, color: T.dayLabel.color }}><span style={S.dayLabelLine} />Jucate<span style={S.dayLabelLine} /></div>
-            {myPlayedMatches.length === 0
-              ? <p style={{ ...S.emptyMsg, marginBottom: 22 }}>Niciun meci jucat din pronosticurile tale încă.</p>
-              : myPlayedMatches.map(m => {
-                  const pred = predictions[currentUser.name][m.id]
-                  const res  = results[m.id]
-                  const pts  = calcScore(pred, res)
-                  let cardStyle = { ...S.matchCard, ...T.matchCard }
-                  let stripeStyle = S.cardStripeDefault
-                  if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
-                  else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
-                  else if (pts === 2) { cardStyle = { ...cardStyle, ...S.cardGreen }; stripeStyle = S.cardStripeGreen }
-                  return (
-                    <div key={m.id} style={cardStyle}>
-                      <div style={stripeStyle} />
-                      <div style={S.matchCardBody}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
-                          <span style={{ ...S.matchMeta, color: T.textMeta }}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Flag code={m.homef} /> {m.home}
-                          </span>
-                          <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
-                            <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home}</div>
-                            <span style={S.colon}>:</span>
-                            <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away}</div>
+            {/* ── Acordeon Jucate ── */}
+            <button
+              onClick={() => setPlayedOpen(o => !o)}
+              style={{
+                width: '100%', border: 'none', cursor: 'pointer', marginBottom: playedOpen ? 8 : 22,
+                background: 'none', padding: 0, textAlign: 'left',
+              }}>
+              <div style={{ ...S.dayLabel, color: T.dayLabel.color, marginBottom: 0 }}>
+                <span style={S.dayLabelLine} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                  Jucate
+                  {myPlayedMatches.length > 0 && (
+                    <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: 11, fontWeight: 600, color: T.textSub, opacity: 0.8 }}>
+                      ({myPlayedMatches.length} meciuri · {myPlayedMatches.reduce((sum, m) => {
+                        const pred = predictions[currentUser.name]?.[m.id]
+                        const res = results[m.id]
+                        const pts = pred && res ? calcScore(pred, res) : 0
+                        return sum + (pts || 0)
+                      }, 0)}p)
+                    </span>
+                  )}
+                  <span style={{ fontSize: 14, color: T.gold, marginLeft: 2 }}>{playedOpen ? '▲' : '▼'}</span>
+                </span>
+                <span style={S.dayLabelLine} />
+              </div>
+            </button>
+
+            {playedOpen && (
+              myPlayedMatches.length === 0
+                ? <p style={{ ...S.emptyMsg, marginBottom: 22 }}>Niciun meci jucat din pronosticurile tale încă.</p>
+                : myPlayedMatches.map(m => {
+                    const pred = predictions[currentUser.name][m.id]
+                    const res  = results[m.id]
+                    const pts  = calcScore(pred, res)
+                    let cardStyle = { ...S.matchCard, ...T.matchCard }
+                    let stripeStyle = S.cardStripeDefault
+                    if (pts === 5) { cardStyle = { ...cardStyle, ...S.cardGold }; stripeStyle = S.cardStripeGold }
+                    else if (pts === 3) { cardStyle = { ...cardStyle, ...S.cardBlue }; stripeStyle = S.cardStripeBlue }
+                    else if (pts === 2) { cardStyle = { ...cardStyle, ...S.cardGreen }; stripeStyle = S.cardStripeGreen }
+                    return (
+                      <div key={m.id} style={cardStyle}>
+                        <div style={stripeStyle} />
+                        <div style={S.matchCardBody}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                            <span style={{ ...S.matchMeta, color: T.textMeta }}>{m.date} · {fmtHour(m.kickoff)} <span style={S.matchMetaDot}>•</span> <span style={{ ...S.matchGroup, color: T.textGroup }}>{m.group}</span></span>
                           </div>
-                          <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-                            {m.away} <Flag code={m.awayf} />
-                          </span>
-                        </div>
-                        <div style={{ ...S.resultRow, ...T.resultRow }}>
-                          Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
-                          <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
-                            +{pts}p
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ ...S.teamName, color: T.teamName, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Flag code={m.homef} /> {m.home}
+                            </span>
+                            <div style={{ ...S.scoreboardWrap, ...T.scoreBoard }}>
+                              <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.home}</div>
+                              <span style={S.colon}>:</span>
+                              <div style={{ ...S.scoreDisplay, ...T.scoreBox }}>{pred.away}</div>
+                            </div>
+                            <span style={{ ...S.teamName, textAlign: 'right', color: T.teamName, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                              {m.away} <Flag code={m.awayf} />
+                            </span>
+                          </div>
+                          <div style={{ ...S.resultRow, ...T.resultRow }}>
+                            Rezultat final <b style={{ ...S.resultScore, color: T.textResult }}>{res.home} – {res.away}</b>
+                            <span style={{ ...S.ptsBadge, ...(pts===5?S.ptsBadgeGold:pts===3?S.ptsBadgeBlue:pts===2?S.ptsBadgeGreen:S.ptsBadgeZero) }}>
+                              +{pts}p
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
-            }
+                    )
+                  })
+            )}
 
             <div style={{ ...S.dayLabel, marginTop: 22 }}><span style={S.dayLabelLine} />Următoare<span style={S.dayLabelLine} /></div>
             {myUpcomingMatches.length === 0
